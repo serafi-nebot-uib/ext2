@@ -9,7 +9,6 @@
 #include <sys/stat.h> //S_IRUSR, S_IWUSR
 #include <unistd.h>   // SEEK_SET, read(), write(), open(), close(), lseek()
 
-// MACROs
 #define BLOCKSIZE 1024 // bytes
 
 #define EXITO 0  // para gestión errores
@@ -32,7 +31,6 @@
 
 #define NEGRITA "\x1b[1m"
 
-// Functions
 int bmount(const char *camino);
 int bumount();
 int bwrite(unsigned int nbloque, const void *buf);
