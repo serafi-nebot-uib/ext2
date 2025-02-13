@@ -37,6 +37,3 @@ int bwrite(unsigned int nbloque, const void *buf);
 int bread(unsigned int nbloque, void *buf);
 
 #endif
-
-prova github
-dksoa
