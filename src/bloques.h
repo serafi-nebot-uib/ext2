@@ -36,4 +36,5 @@ int bumount();
 int bwrite(unsigned int nbloque, const void *buf);
 int bread(unsigned int nbloque, void *buf);
 
+#define testMACRO
 #endif
