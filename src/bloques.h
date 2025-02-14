@@ -11,8 +11,8 @@
 
 #define BLOCKSIZE 1024 // bytes
 
-#define EXITO 0  // para gestión errores
-#define FALLO -1 // para gestión errores
+#define EXITO   0
+#define FALLO   -1
 
 #define BLACK   "\x1B[30m"
 #define RED     "\x1b[31m"
@@ -29,7 +29,7 @@
 #define GRAY    "\x1B[38;2;176;174;174m"
 #define RESET   "\x1b[0m"
 
-#define NEGRITA "\x1b[1m"
+#define BOLD    "\x1b[1m"
 
 int bmount(const char *camino);
 int bumount();
