@@ -1,3 +1,8 @@
+/**************************************************************************
+* FILENAME: bloques.h
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
+
 #ifndef __BLOQUES_H__
 #define __BLOQUES_H__
 
@@ -29,7 +34,7 @@
 #define GRAY    "\x1B[38;2;176;174;174m"
 #define RESET   "\x1b[0m"
 
-#define BOLD    "\x1b[1m"
+#define NEGRITA "\x1b[1m"
 
 int bmount(const char *camino);
 int bumount();
