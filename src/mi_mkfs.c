@@ -2,7 +2,6 @@
 * FILENAME: mi_mkfs.c
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
-
 #include "bloques.h"
 
 int main(int argc, char **argv) {

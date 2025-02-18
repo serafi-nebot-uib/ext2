@@ -2,7 +2,6 @@
 * FILENAME: bloques.h
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
-
 #ifndef __BLOQUES_H__
 #define __BLOQUES_H__
 
