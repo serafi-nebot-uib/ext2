@@ -8,7 +8,7 @@
 #define posSB 0 // el superbloque se escribe en el primer bloque de nuestro FS
 #define tamSB 1
 
-struct superbloque {
+typedef struct {
     unsigned int posPrimerBloqueMB;                         // Posición absoluta del primer bloque del mapa de bits
     unsigned int posUltimoBloqueMB;                         // Posición absoluta del último bloque del mapa de bits
     unsigned int posPrimerBloqueAI;                         // Posición absoluta del primer bloque del array de inodos
@@ -22,7 +22,7 @@ struct superbloque {
     unsigned int totBloques;                                // Cantidad total de bloques del disco
     unsigned int totInodos;                                 // Cantidad total de inodos (heurística)
     char padding[BLOCKSIZE - 12 * sizeof(unsigned int)];    // Relleno para ocupar el bloque completo
-};
+} superbloque_t;
 
 #define INODOSIZE 128 // tamaño en bytes de un inodo
 
