@@ -34,7 +34,12 @@
 #define GRAY    "\x1B[38;2;176;174;174m"
 #define RESET   "\x1b[0m"
 
-#define NEGRITA "\x1b[1m"
+#define BOLD "\x1b[1m"
+
+#define DEBUG_LVL  1
+#define DEBUG(...) { if (DEBUG_LVL > 0) { fprintf(stderr, GRAY "debug: " RESET); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }}
+// Macro que formatea y simplifica la impresión de errno
+#define ERRSYS(name) fprintf(stderr, BOLD RED "%s→" name "(): " RESET RED "%s\n" RESET,  __func__, strerror(errno))
 
 int bmount(const char *camino);
 int bumount();

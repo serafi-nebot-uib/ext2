@@ -7,7 +7,7 @@
 
 int main(int argc, char **argv) {
     if (argc != 3) {
-        fprintf(stderr, NEGRITA "uso: " RESET "%s <nombre_dispositivo> <nbloques>\n", argv[0]);
+        fprintf(stderr, BOLD "uso: " RESET "%s <nombre_dispositivo> <nbloques>\n", argv[0]);
         return FALLO;
     }
 

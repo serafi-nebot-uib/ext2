@@ -7,14 +7,11 @@
 // Descriptor del fichero actual
 static int fd = 0;
 
-// Macro que formatea y simplifica la impresión de errno
-#define ERR_PRINT(name) fprintf(stderr, NEGRITA RED "%s→" name "(): " RESET RED "%s\n" RESET,  __func__, strerror(errno))
-
 // Modo de creación de ficheros: (-rw-rw-rw-)
 #define FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
 /**
- * Monta el dispositivo virtual abriendo/creando un fichero
+ * Montar el dispositivo virtual abriendo/creando un fichero
  *
  * @param camino ruta al dispositivo virtual
  * @return descriptor del fichero creado, FALLO si hay error
@@ -30,28 +27,28 @@ int bmount(const char *camino) {
     //                   = 0644
     mode_t mask = umask(000);
     // Abrir/crear el fichero con los permisos por defecto (FILE_MODE)
-    if ((fd = open(camino, O_RDWR | O_CREAT, FILE_MODE)) < 0) ERR_PRINT("open");
+    if ((fd = open(camino, O_RDWR | O_CREAT, FILE_MODE)) < 0) ERRSYS("open");
     else ret = fd;
     umask(mask); // Restaurar la antigua mascara de creación
     return ret;
 }
 
 /**
- * Desmonta el dispositivo virtual cerrando el fichero
+ * Desmontar el dispositivo virtual cerrando el fichero
  *
  * @return 0 si se ha desmontado correctamente el dispositivo virtual, FALLO en caso contrario
  */
 int bumount() {
     int ret = 0;
     if (close(fd) < 0) {
-        ERR_PRINT("close");
+        ERRSYS("close");
         ret = FALLO;
     }
     return ret;
 }
 
 /**
- * Escribe los datos almacenados en buffer de datos buf al bloque número nbloque
+ * Escribir los datos almacenados en buffer de datos buf al bloque número nbloque
  *
  * @param nbloque número de bloque al que escribir
  * @param buf puntero al buffer de datos a escribir (debe ser un buffer de BLOCKSIZE bytes)
@@ -60,19 +57,19 @@ int bumount() {
 int bwrite(unsigned int nbloque, const void *buf) {
     // Desplaza el cursor del archivo hasta el primer byte del bloque especificado (nbloque ∗ BLOCKSIZE)
     if (lseek(fd, nbloque*BLOCKSIZE, SEEK_SET) < 0) {
-        ERR_PRINT("lseek");
+        ERRSYS("lseek");
         return FALLO;
     }
     size_t nbytes = write(fd, buf, BLOCKSIZE);
     if (nbytes < 0) {
-        ERR_PRINT("write");
+        ERRSYS("write");
         return FALLO;
     }
     return nbytes;
 }
 
 /**
- * Lee los datos almacenados en el bloque número nbloque al buffer de datos buf
+ * Leer los datos almacenados en el bloque número nbloque al buffer de datos buf
  *
  * @param nbloque número de bloque al que leer
  * @param buf puntero al buffer de datos a leer (debe ser un buffer de BLOCKSIZE bytes)
@@ -81,12 +78,12 @@ int bwrite(unsigned int nbloque, const void *buf) {
 int bread(unsigned int nbloque, void *buf) {
     // Mueve el cursor del fichero al primer byte del bloque indicado (nbloque * BLOCKSIZE)
     if (lseek(fd, nbloque*BLOCKSIZE, SEEK_SET) < 0) {
-        ERR_PRINT("lseek");
+        ERRSYS("lseek");
         return FALLO;
     }
     size_t nbytes = read(fd, buf, BLOCKSIZE);
     if (nbytes < 0) {
-        ERR_PRINT("read");
+        ERRSYS("read");
         return FALLO;
     }
     return nbytes;
