@@ -68,7 +68,6 @@ int initMB() {
     DEBUG("sb.totInodos: %d", sb.totInodos);
 
 
-    // number of occupied blocks -> number of bits to set to 1 on MB section
     int mb_bit_cnt = tamSB + tamMB(sb.totBloques) + tamAI(sb.totInodos);
     int mb_byte_cnt = mb_bit_cnt / 8;
     int mb_block_cnt = mb_byte_cnt / BLOCKSIZE;
@@ -88,6 +87,9 @@ int initMB() {
     DEBUG("buff[%d]: %hhu", mb_extra_byte_off, buff[mb_extra_byte_off]);
     for (int i = mb_extra_byte_off+1; i < BLOCKSIZE; i++) buff[i] = 0;
     bwrite(sb.posPrimerBloqueMB + mb_block_cnt, buff);
+
+    sb.cantBloquesLibres -= mb_bit_cnt; // mb_bit_cnt = cantidad de bloques que ocupan los metadatos
+    bwrite(posSB, &sb);
 
     return 0;
 }
