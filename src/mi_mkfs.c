@@ -3,7 +3,9 @@
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
-#include "bloques.h"
+#include "ficheros_basico.h"
+
+// TODO: check that tests pass for level 2
 
 int main(int argc, char **argv) {
     if (argc != 3) {
@@ -29,6 +31,10 @@ int main(int argc, char **argv) {
             return FALLO;
         }
     }
+
+    initSB(nbloques, nbloques / 4);
+    initMB();
+    initAI();
 
     if (bumount() == FALLO) {
         fprintf(stderr, "error al desmontar el dispositivo virtual %s\n", nombre_dispositivo);
