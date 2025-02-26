@@ -5,8 +5,6 @@
 
 #include "ficheros_basico.h"
 
-// TODO: check that tests pass for level 2
-
 int main(int argc, char **argv) {
     if (argc != 3) {
         fprintf(stderr, BOLD "uso: " RESET "%s <nombre_dispositivo> <nbloques>\n", argv[0]);
