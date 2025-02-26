@@ -94,4 +94,25 @@ int initMB() {
     return 0;
 }
 
-// int initAI();
+/**
+ * Inicializar el array de inodos libres del sistema de ficheros
+ */
+int initAI() {
+    inodo_t inodos[BLOCKSIZE / INODOSIZE];
+
+    superbloque_t sb = {};
+    bread(posSB, &sb);
+
+    unsigned int inode_next = sb.posPrimerInodoLibre + 1;
+    for (int i = sb.posPrimerBloqueAI; i <= sb.posUltimoBloqueAI && inode_next < sb.totInodos; i++) {
+        bread(i, inodos);
+        for (int j = 0; j < BLOCKSIZE / INODOSIZE; j++) {
+            inodos[j].tipo = 'l';
+            if (inode_next < sb.totInodos) inodos[j].punterosDirectos[0] = inode_next++;
+            else inodos[j].punterosDirectos[0] = UINT_MAX;
+        }
+        bwrite(i, inodos);
+    }
+
+    return 0;
+}
