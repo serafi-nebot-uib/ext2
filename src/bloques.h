@@ -37,7 +37,7 @@
 #define BOLD "\x1b[1m"
 
 #define DEBUG_LVL  1
-#define DEBUG(...) { if (DEBUG_LVL > 0) { fprintf(stderr, GRAY "debug: " RESET); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }}
+#define DEBUG(...) { if (DEBUG_LVL > 0) { fprintf(stderr, GRAY "debug [%s]: " RESET, __func__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }}
 // Macro que formatea y simplifica la impresión de errno
 #define ERRSYS(name) fprintf(stderr, BOLD RED "%s→" name "(): " RESET RED "%s\n" RESET,  __func__, strerror(errno))
 

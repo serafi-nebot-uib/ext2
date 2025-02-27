@@ -27,6 +27,8 @@ int main(int argc, char **argv) {
     initSB(block_cnt, inode_cnt);
     initMB();
 
+    escribir_bit(40003, 0);
+
     bumount();
 
     return 0;
