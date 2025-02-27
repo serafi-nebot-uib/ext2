@@ -52,5 +52,6 @@ int initSB(unsigned int nbloques, unsigned int ninodos);
 int initMB();
 int initAI();
 int escribir_bit(unsigned int nbloque, unsigned int bit);
+int leer_bit(unsigned int nbloque);
 
 #endif

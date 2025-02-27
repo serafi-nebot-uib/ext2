@@ -27,7 +27,9 @@ int main(int argc, char **argv) {
     initSB(block_cnt, inode_cnt);
     initMB();
 
-    escribir_bit(40003, 0);
+    printf("val: %hhu\n", leer_bit(40003));
+    escribir_bit(40003, 1);
+    printf("val: %hhu\n", leer_bit(40003));
 
     bumount();
 

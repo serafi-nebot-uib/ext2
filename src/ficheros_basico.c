@@ -119,7 +119,7 @@ int initAI() {
 }
 
 /**
- * Escribre el valor del parametro bit al bit del mapa de bits correspondiente al numero de bloque indicado por el parametro nbloque.
+ * Escribir el valor del parametro bit al bit del mapa de bits correspondiente al numero de bloque indicado por el parametro nbloque.
  * Se escribe 0 si bit = 0, se escribe 1 si bit != 0.
  *
  * @param nbloque numero de bloque que modificar en el mapa de bits
@@ -153,4 +153,31 @@ int escribir_bit(unsigned int nbloque, unsigned int bit) {
     if (bwrite(idx_block, buff) == FALLO) return FALLO;
 
     return 0;
+}
+
+/**
+ * Leer el valor del bit del mapa de bits correspondiente al numero de bloque indicado por el parametro nbloque.
+ *
+ * @param nbloque numero de bloque del cual leer el bit
+ * @return valor del bit correspondiente a nbloque
+ */
+int leer_bit(unsigned int nbloque) {
+    superbloque_t sb = {};
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+
+    unsigned int pos_byte = nbloque / 8;
+    unsigned int pos_bit = nbloque % 8;
+    unsigned int idx_byte = pos_byte % BLOCKSIZE;
+    unsigned int idx_block = sb.posPrimerBloqueMB + pos_byte / BLOCKSIZE;
+
+    DEBUG("pos_byte: %d", pos_byte);
+    DEBUG("pos_bit: %d", pos_bit);
+    DEBUG("idx_byte: %d", idx_byte);
+    DEBUG("idx_block: %d", idx_block);
+
+    unsigned char buff[BLOCKSIZE] = {};
+    if (bread(idx_block, buff) == FALLO) return FALLO;
+    char mask = 1 << (7 - pos_bit);
+    DEBUG("mask: 0x%1$02x = %1$hhu", mask);
+    return (buff[idx_byte] & mask) != 0;
 }
