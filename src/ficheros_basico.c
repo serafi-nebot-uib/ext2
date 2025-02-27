@@ -51,7 +51,7 @@ int initSB(unsigned int nbloques, unsigned int ninodos) {
  */
 int initMB() {
     superbloque_t sb = {};
-    bread(posSB, &sb);
+    if (bread(posSB, &sb) == FALLO) return FALLO;
     char buff[BLOCKSIZE] = {};
 
     DEBUG("sb.posPrimerBloqueMB: %d", sb.posPrimerBloqueMB);
@@ -81,15 +81,16 @@ int initMB() {
     DEBUG("mb_extra_bit_cnt: %d", mb_extra_bit_cnt);
 
     memset(buff, 0xff, BLOCKSIZE);
-    for (int i = 0; i < mb_block_cnt; i++) bwrite(sb.posPrimerBloqueMB + i, buff);
+    for (int i = 0; i < mb_block_cnt; i++)
+        if (bwrite(sb.posPrimerBloqueMB + i, buff) == FALLO) return FALLO;
 
     buff[mb_extra_byte_off] = ~((1 << (8 - mb_extra_bit_cnt)) - 1);
     DEBUG("buff[%d]: %hhu", mb_extra_byte_off, buff[mb_extra_byte_off]);
     for (int i = mb_extra_byte_off+1; i < BLOCKSIZE; i++) buff[i] = 0;
-    bwrite(sb.posPrimerBloqueMB + mb_block_cnt, buff);
+    if (bwrite(sb.posPrimerBloqueMB + mb_block_cnt, buff) == FALLO) return FALLO;
 
     sb.cantBloquesLibres -= mb_bit_cnt; // mb_bit_cnt = cantidad de bloques que ocupan los metadatos
-    bwrite(posSB, &sb);
+    if (bwrite(posSB, &sb) == FALLO) return FALLO;
 
     return 0;
 }
@@ -101,18 +102,82 @@ int initAI() {
     inodo_t inodos[BLOCKSIZE / INODOSIZE];
 
     superbloque_t sb = {};
-    bread(posSB, &sb);
+    if (bread(posSB, &sb) == FALLO) return FALLO;
 
     unsigned int inode_next = sb.posPrimerInodoLibre + 1;
     for (int i = sb.posPrimerBloqueAI; i <= sb.posUltimoBloqueAI && inode_next < sb.totInodos; i++) {
-        bread(i, inodos);
+        if (bread(i, inodos) == FALLO)  return FALLO;
         for (int j = 0; j < BLOCKSIZE / INODOSIZE; j++) {
             inodos[j].tipo = 'l';
             if (inode_next < sb.totInodos) inodos[j].punterosDirectos[0] = inode_next++;
             else inodos[j].punterosDirectos[0] = UINT_MAX;
         }
-        bwrite(i, inodos);
+        if (bwrite(i, inodos) == FALLO) return FALLO;
     }
 
     return 0;
+}
+
+/**
+ * Escribir el valor del parametro bit al bit del mapa de bits correspondiente al numero de bloque indicado por el parametro nbloque.
+ * Se escribe 0 si bit = 0, se escribe 1 si bit != 0.
+ *
+ * @param nbloque numero de bloque que modificar en el mapa de bits
+ * @param bit nuevo valor del bit a midificar
+ * @return 0 si se escribe el valor correctamente, FALLO en caso contrario
+ */
+int escribir_bit(unsigned int nbloque, unsigned int bit) {
+    superbloque_t sb = {};
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+
+    unsigned int pos_byte = nbloque / 8;
+    unsigned int pos_bit = nbloque % 8;
+    unsigned int idx_byte = pos_byte % BLOCKSIZE;
+    unsigned int idx_block = sb.posPrimerBloqueMB + pos_byte / BLOCKSIZE;
+
+    DEBUG("pos_byte: %d", pos_byte);
+    DEBUG("pos_bit: %d", pos_bit);
+    DEBUG("idx_byte: %d", idx_byte);
+    DEBUG("idx_block: %d", idx_block);
+
+    unsigned char buff[BLOCKSIZE] = {};
+    if (bread(idx_block, buff) == FALLO) return FALLO;
+
+    char mask = 1 << (7 - pos_bit);
+    DEBUG("mask: 0x%1$02x = %1$hhu", mask);
+    DEBUG("previous value: 0x%1$02x = %1$hhu", buff[idx_byte]);
+    if (bit) buff[idx_byte] |= mask;
+    else buff[idx_byte] &= ~mask;
+    DEBUG("new value: 0x%1$02x = %1$hhu", buff[idx_byte]);
+
+    if (bwrite(idx_block, buff) == FALLO) return FALLO;
+
+    return 0;
+}
+
+/**
+ * Leer el valor del bit del mapa de bits correspondiente al numero de bloque indicado por el parametro nbloque.
+ *
+ * @param nbloque numero de bloque del cual leer el bit
+ * @return valor del bit correspondiente a nbloque
+ */
+int leer_bit(unsigned int nbloque) {
+    superbloque_t sb = {};
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+
+    unsigned int pos_byte = nbloque / 8;
+    unsigned int pos_bit = nbloque % 8;
+    unsigned int idx_byte = pos_byte % BLOCKSIZE;
+    unsigned int idx_block = sb.posPrimerBloqueMB + pos_byte / BLOCKSIZE;
+
+    DEBUG("pos_byte: %d", pos_byte);
+    DEBUG("pos_bit: %d", pos_bit);
+    DEBUG("idx_byte: %d", idx_byte);
+    DEBUG("idx_block: %d", idx_block);
+
+    unsigned char buff[BLOCKSIZE] = {};
+    if (bread(idx_block, buff) == FALLO) return FALLO;
+    char mask = 1 << (7 - pos_bit);
+    DEBUG("mask: 0x%1$02x = %1$hhu", mask);
+    return (buff[idx_byte] & mask) != 0;
 }
