@@ -9,9 +9,12 @@
 #include "../src/ficheros_basico.h"
 
 #define DEFAULT_DEVICE_NAME "disco_test"
+#define DEFAULT_BLOCK_CNT 100000
 
 #define EXISTS(path) (access(path, F_OK) == 0)
 #define DELETE_IF_EXISTS(path) {if (EXISTS(path)) assert(remove(DEFAULT_DEVICE_NAME) == 0);}
+
+// TODO: file descriptors are not closed when assert fails?
 
 static unsigned char buff_1[BLOCKSIZE] = {};
 static unsigned char buff_2[BLOCKSIZE] = {};
@@ -126,11 +129,32 @@ void test_init_fs() {
     DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
 }
 
+void test_leer_escribir_bit() {
+    DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
+    assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+
+    memset(buff_1, 0x00, BLOCKSIZE);
+    for (int i = 0; i < DEFAULT_BLOCK_CNT; i++) assert(bwrite(i, buff_1) != FALLO);
+    assert(initSB(DEFAULT_BLOCK_CNT, DEFAULT_BLOCK_CNT / 4) != FALLO);
+
+    unsigned int block = BLOCKSIZE / 3;
+    assert(escribir_bit(block, 1) != FALLO);
+    assert(leer_bit(block) == 1);
+    assert(escribir_bit(block, 0) != FALLO);
+    assert(leer_bit(block) == 0);
+
+    assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+    DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
+}
+
+// TODO: reservar_bloque test
+
 int main(int argc, char **argv) {
     test_mount_umount();
     test_bread_bwrite();
     test_struct_size();
     test_bloques_tam();
     test_init_fs();
+    test_leer_escribir_bit();
     return 0;
 }

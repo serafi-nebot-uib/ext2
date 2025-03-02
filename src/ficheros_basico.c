@@ -91,7 +91,7 @@ int initMB() {
     sb.cantBloquesLibres -= mb_bit_cnt; // mb_bit_cnt = cantidad de bloques que ocupan los metadatos
     if (bwrite(posSB, &sb) == FALLO) return FALLO;
 
-    return 0;
+    return EXITO;
 }
 
 /**
@@ -112,7 +112,7 @@ int initAI() {
         if (bwrite(i, inodos) == FALLO) return FALLO;
     }
 
-    return 0;
+    return EXITO;
 }
 
 /**
@@ -147,7 +147,7 @@ int escribir_bit(unsigned int nbloque, unsigned int bit) {
 
     if (bwrite(idx_block, block_buff) == FALLO) return FALLO;
 
-    return 0;
+    return EXITO;
 }
 
 /**
@@ -171,10 +171,14 @@ int leer_bit(unsigned int nbloque) {
 
     if (bread(idx_block, block_buff) == FALLO) return FALLO;
     char mask = 1 << (7 - pos_bit);
+    DEBUG("value: 0x%1$02x = %1$hhu", block_buff[idx_byte]);
     DEBUG("mask: 0x%1$02x = %1$hhu", mask);
     return (block_buff[idx_byte] & mask) != 0;
 }
 
+/**
+ * Reservar el primer bloque libre y lo resetea a 0.
+ */
 int reservar_bloque() {
     if (bread(posSB, &sb) == FALLO) return FALLO;
     if (sb.cantBloquesLibres == 0) return FALLO;
@@ -209,7 +213,6 @@ int reservar_bloque() {
         nbit++;
     }
     DEBUG("nbit: %u", nbit);
-    // return 0;
 
     // modificar la zona de metadatos para que el bloque quede reservado
     unsigned int nblock = (nblock_mb * BLOCKSIZE + nbyte) * 8 + nbit; 
