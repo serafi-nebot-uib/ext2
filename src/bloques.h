@@ -14,6 +14,8 @@
 #include <sys/stat.h> //S_IRUSR, S_IWUSR
 #include <unistd.h>   // SEEK_SET, read(), write(), open(), close(), lseek()
 
+#include "logging.h"
+
 #define BLOCKSIZE 1024 // bytes
 
 #define EXITO   0
@@ -35,11 +37,6 @@
 #define RESET   "\x1b[0m"
 
 #define BOLD "\x1b[1m"
-
-#define DEBUG_LVL  1
-#define DEBUG(...) { if (DEBUG_LVL > 0) { fprintf(stderr, GRAY "debug [%s]: " RESET, __func__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }}
-// Macro que formatea y simplifica la impresión de errno
-#define ERRSYS(name) fprintf(stderr, BOLD RED "%s→" name "(): " RESET RED "%s\n" RESET,  __func__, strerror(errno))
 
 int bmount(const char *camino);
 int bumount();
