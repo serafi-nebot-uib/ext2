@@ -1,6 +1,8 @@
 #include "ficheros_basico.h"
 #include "bloques.h"
 
+static unsigned char block_buff[BLOCKSIZE] = {};
+
 /**
  * Calcular el tamaño en bloques para el mapa de bits
  *
@@ -52,7 +54,6 @@ int initSB(unsigned int nbloques, unsigned int ninodos) {
 int initMB() {
     superbloque_t sb = {};
     if (bread(posSB, &sb) == FALLO) return FALLO;
-    char buff[BLOCKSIZE] = {};
 
     DEBUG("sb.posPrimerBloqueMB: %d", sb.posPrimerBloqueMB);
     DEBUG("sb.posUltimoBloqueMB: %d", sb.posUltimoBloqueMB);
@@ -80,14 +81,14 @@ int initMB() {
     DEBUG("mb_extra_byte_off: %d", mb_extra_byte_off);
     DEBUG("mb_extra_bit_cnt: %d", mb_extra_bit_cnt);
 
-    memset(buff, 0xff, BLOCKSIZE);
+    memset(block_buff, 0xff, BLOCKSIZE);
     for (int i = 0; i < mb_block_cnt; i++)
-        if (bwrite(sb.posPrimerBloqueMB + i, buff) == FALLO) return FALLO;
+        if (bwrite(sb.posPrimerBloqueMB + i, block_buff) == FALLO) return FALLO;
 
-    buff[mb_extra_byte_off] = ~((1 << (8 - mb_extra_bit_cnt)) - 1);
-    DEBUG("buff[%d]: %hhu", mb_extra_byte_off, buff[mb_extra_byte_off]);
-    for (int i = mb_extra_byte_off+1; i < BLOCKSIZE; i++) buff[i] = 0;
-    if (bwrite(sb.posPrimerBloqueMB + mb_block_cnt, buff) == FALLO) return FALLO;
+    block_buff[mb_extra_byte_off] = ~((1 << (8 - mb_extra_bit_cnt)) - 1);
+    DEBUG("block_buff[%d]: %hhu", mb_extra_byte_off, block_buff[mb_extra_byte_off]);
+    for (int i = mb_extra_byte_off+1; i < BLOCKSIZE; i++) block_buff[i] = 0;
+    if (bwrite(sb.posPrimerBloqueMB + mb_block_cnt, block_buff) == FALLO) return FALLO;
 
     sb.cantBloquesLibres -= mb_bit_cnt; // mb_bit_cnt = cantidad de bloques que ocupan los metadatos
     if (bwrite(posSB, &sb) == FALLO) return FALLO;
@@ -140,17 +141,16 @@ int escribir_bit(unsigned int nbloque, unsigned int bit) {
     DEBUG("idx_byte: %d", idx_byte);
     DEBUG("idx_block: %d", idx_block);
 
-    unsigned char buff[BLOCKSIZE] = {};
-    if (bread(idx_block, buff) == FALLO) return FALLO;
+    if (bread(idx_block, block_buff) == FALLO) return FALLO;
 
     char mask = 1 << (7 - pos_bit);
     DEBUG("mask: 0x%1$02x = %1$hhu", mask);
-    DEBUG("previous value: 0x%1$02x = %1$hhu", buff[idx_byte]);
-    if (bit) buff[idx_byte] |= mask;
-    else buff[idx_byte] &= ~mask;
-    DEBUG("new value: 0x%1$02x = %1$hhu", buff[idx_byte]);
+    DEBUG("previous value: 0x%1$02x = %1$hhu", block_buff[idx_byte]);
+    if (bit) block_buff[idx_byte] |= mask;
+    else block_buff[idx_byte] &= ~mask;
+    DEBUG("new value: 0x%1$02x = %1$hhu", block_buff[idx_byte]);
 
-    if (bwrite(idx_block, buff) == FALLO) return FALLO;
+    if (bwrite(idx_block, block_buff) == FALLO) return FALLO;
 
     return 0;
 }
@@ -175,9 +175,8 @@ int leer_bit(unsigned int nbloque) {
     DEBUG("idx_byte: %d", idx_byte);
     DEBUG("idx_block: %d", idx_block);
 
-    unsigned char buff[BLOCKSIZE] = {};
-    if (bread(idx_block, buff) == FALLO) return FALLO;
+    if (bread(idx_block, block_buff) == FALLO) return FALLO;
     char mask = 1 << (7 - pos_bit);
     DEBUG("mask: 0x%1$02x = %1$hhu", mask);
-    return (buff[idx_byte] & mask) != 0;
+    return (block_buff[idx_byte] & mask) != 0;
 }
