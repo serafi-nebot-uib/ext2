@@ -53,5 +53,6 @@ int initMB();
 int initAI();
 int escribir_bit(unsigned int nbloque, unsigned int bit);
 int leer_bit(unsigned int nbloque);
+int reservar_bloque();
 
 #endif

@@ -47,5 +47,5 @@ int main(int argc, char **argv) {
         return FALLO;
     }
 
-    return 0;
+    return EXITO;
 }

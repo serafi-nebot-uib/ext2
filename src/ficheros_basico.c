@@ -1,6 +1,9 @@
 #include "ficheros_basico.h"
 #include "bloques.h"
 
+static unsigned char block_buff[BLOCKSIZE] = {};
+static superbloque_t sb = {};
+
 /**
  * Calcular el tamaño en bloques para el mapa de bits
  *
@@ -30,7 +33,6 @@ int tamAI(unsigned int ninodos) {
  * @return número de bytes escritos, FALLO en caso de error
  */
 int initSB(unsigned int nbloques, unsigned int ninodos) {
-    superbloque_t sb = {};
     sb.posPrimerBloqueMB = posSB + tamSB;
     sb.posUltimoBloqueMB = sb.posPrimerBloqueMB + tamMB(nbloques) - 1;
     sb.posPrimerBloqueAI = sb.posUltimoBloqueMB + 1;
@@ -50,9 +52,7 @@ int initSB(unsigned int nbloques, unsigned int ninodos) {
  * Inicializar el mapa de bits del sistema de ficheros
  */
 int initMB() {
-    superbloque_t sb = {};
     if (bread(posSB, &sb) == FALLO) return FALLO;
-    char buff[BLOCKSIZE] = {};
 
     DEBUG("sb.posPrimerBloqueMB: %d", sb.posPrimerBloqueMB);
     DEBUG("sb.posUltimoBloqueMB: %d", sb.posUltimoBloqueMB);
@@ -67,7 +67,6 @@ int initMB() {
     DEBUG("sb.totBloques: %d", sb.totBloques);
     DEBUG("sb.totInodos: %d", sb.totInodos);
 
-
     int mb_bit_cnt = tamSB + tamMB(sb.totBloques) + tamAI(sb.totInodos);
     int mb_byte_cnt = mb_bit_cnt / 8;
     int mb_block_cnt = mb_byte_cnt / BLOCKSIZE;
@@ -80,30 +79,28 @@ int initMB() {
     DEBUG("mb_extra_byte_off: %d", mb_extra_byte_off);
     DEBUG("mb_extra_bit_cnt: %d", mb_extra_bit_cnt);
 
-    memset(buff, 0xff, BLOCKSIZE);
+    memset(block_buff, 0xff, BLOCKSIZE);
     for (int i = 0; i < mb_block_cnt; i++)
-        if (bwrite(sb.posPrimerBloqueMB + i, buff) == FALLO) return FALLO;
+        if (bwrite(sb.posPrimerBloqueMB + i, block_buff) == FALLO) return FALLO;
 
-    buff[mb_extra_byte_off] = ~((1 << (8 - mb_extra_bit_cnt)) - 1);
-    DEBUG("buff[%d]: %hhu", mb_extra_byte_off, buff[mb_extra_byte_off]);
-    for (int i = mb_extra_byte_off+1; i < BLOCKSIZE; i++) buff[i] = 0;
-    if (bwrite(sb.posPrimerBloqueMB + mb_block_cnt, buff) == FALLO) return FALLO;
+    block_buff[mb_extra_byte_off] = ~((1 << (8 - mb_extra_bit_cnt)) - 1);
+    DEBUG("block_buff[%d]: %hhu", mb_extra_byte_off, block_buff[mb_extra_byte_off]);
+    for (int i = mb_extra_byte_off+1; i < BLOCKSIZE; i++) block_buff[i] = 0;
+    if (bwrite(sb.posPrimerBloqueMB + mb_block_cnt, block_buff) == FALLO) return FALLO;
 
     sb.cantBloquesLibres -= mb_bit_cnt; // mb_bit_cnt = cantidad de bloques que ocupan los metadatos
     if (bwrite(posSB, &sb) == FALLO) return FALLO;
 
-    return 0;
+    return EXITO;
 }
 
 /**
  * Inicializar el array de inodos libres del sistema de ficheros
  */
 int initAI() {
-    inodo_t inodos[BLOCKSIZE / INODOSIZE];
-
-    superbloque_t sb = {};
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
+    inodo_t inodos[BLOCKSIZE / INODOSIZE];
     unsigned int inode_next = sb.posPrimerInodoLibre + 1;
     for (int i = sb.posPrimerBloqueAI; i <= sb.posUltimoBloqueAI && inode_next < sb.totInodos; i++) {
         if (bread(i, inodos) == FALLO)  return FALLO;
@@ -115,7 +112,7 @@ int initAI() {
         if (bwrite(i, inodos) == FALLO) return FALLO;
     }
 
-    return 0;
+    return EXITO;
 }
 
 /**
@@ -127,7 +124,6 @@ int initAI() {
  * @return 0 si se escribe el valor correctamente, FALLO en caso contrario
  */
 int escribir_bit(unsigned int nbloque, unsigned int bit) {
-    superbloque_t sb = {};
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
     unsigned int pos_byte = nbloque / 8;
@@ -140,19 +136,18 @@ int escribir_bit(unsigned int nbloque, unsigned int bit) {
     DEBUG("idx_byte: %d", idx_byte);
     DEBUG("idx_block: %d", idx_block);
 
-    unsigned char buff[BLOCKSIZE] = {};
-    if (bread(idx_block, buff) == FALLO) return FALLO;
+    if (bread(idx_block, block_buff) == FALLO) return FALLO;
 
     char mask = 1 << (7 - pos_bit);
     DEBUG("mask: 0x%1$02x = %1$hhu", mask);
-    DEBUG("previous value: 0x%1$02x = %1$hhu", buff[idx_byte]);
-    if (bit) buff[idx_byte] |= mask;
-    else buff[idx_byte] &= ~mask;
-    DEBUG("new value: 0x%1$02x = %1$hhu", buff[idx_byte]);
+    DEBUG("previous value: 0x%1$02x = %1$hhu", block_buff[idx_byte]);
+    if (bit) block_buff[idx_byte] |= mask;
+    else block_buff[idx_byte] &= ~mask;
+    DEBUG("new value: 0x%1$02x = %1$hhu", block_buff[idx_byte]);
 
-    if (bwrite(idx_block, buff) == FALLO) return FALLO;
+    if (bwrite(idx_block, block_buff) == FALLO) return FALLO;
 
-    return 0;
+    return EXITO;
 }
 
 /**
@@ -162,7 +157,6 @@ int escribir_bit(unsigned int nbloque, unsigned int bit) {
  * @return valor del bit correspondiente a nbloque
  */
 int leer_bit(unsigned int nbloque) {
-    superbloque_t sb = {};
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
     unsigned int pos_byte = nbloque / 8;
@@ -175,9 +169,61 @@ int leer_bit(unsigned int nbloque) {
     DEBUG("idx_byte: %d", idx_byte);
     DEBUG("idx_block: %d", idx_block);
 
-    unsigned char buff[BLOCKSIZE] = {};
-    if (bread(idx_block, buff) == FALLO) return FALLO;
+    if (bread(idx_block, block_buff) == FALLO) return FALLO;
     char mask = 1 << (7 - pos_bit);
+    DEBUG("value: 0x%1$02x = %1$hhu", block_buff[idx_byte]);
     DEBUG("mask: 0x%1$02x = %1$hhu", mask);
-    return (buff[idx_byte] & mask) != 0;
+    return (block_buff[idx_byte] & mask) != 0;
+}
+
+/**
+ * Reservar el primer bloque libre y lo resetea a 0.
+ */
+int reservar_bloque() {
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+    if (sb.cantBloquesLibres == 0) return FALLO;
+
+    // iterar todos los bloques del mapa de bits para obtener el primer bloque que contiene algun byte que tiene algun bit a 0
+    // utilizamos un buffer auxiliar para poder hacer la comparación con memcmp, que puede ser mas eficiente que iterar todo el bloque manualmente
+    unsigned char aux[BLOCKSIZE] = {};
+    memset(aux, 0xff, BLOCKSIZE);
+    unsigned int block_cnt_mb = sb.posUltimoBloqueMB - sb.posPrimerBloqueMB;
+    unsigned int nblock_mb = 0;
+    DEBUG("sb.posPrimerBloqueMB: %u", sb.posPrimerBloqueMB);
+    DEBUG("sb.posUltimoBloqueMB: %u", sb.posUltimoBloqueMB);
+    DEBUG("block_cnt_mb: %u", block_cnt_mb);
+    for (; nblock_mb < block_cnt_mb; nblock_mb++) {
+        if (bread(sb.posPrimerBloqueMB + nblock_mb, block_buff) == FALLO) return FALLO;
+        if (memcmp(block_buff, aux, BLOCKSIZE)) break;
+    }
+    DEBUG("nblock_mb: %u", nblock_mb);
+
+    // obtener la posición del primer byte del bloque que tiene algun bit a 0
+    unsigned int nbyte = 0;
+    while (nbyte < BLOCKSIZE && block_buff[nbyte] == 0xff) nbyte++;
+    DEBUG("nbyte: %u", nbyte);
+
+    // obtener la posición del primer bit que esta a 0
+    unsigned char nbit = 0;
+    unsigned char val = block_buff[nbyte];
+    // unsigned char val = 0xf0;
+    while (val & 0x80) {
+        DEBUG("val: 0x%1$02x = %1$u", val);
+        val <<= 1;
+        nbit++;
+    }
+    DEBUG("nbit: %u", nbit);
+
+    // modificar la zona de metadatos para que el bloque quede reservado
+    unsigned int nblock = (nblock_mb * BLOCKSIZE + nbyte) * 8 + nbit; 
+    DEBUG("nblock: %u", nblock);
+    if (escribir_bit(nblock, 1) == FALLO) return FALLO;
+    sb.cantBloquesLibres--;
+    if (bwrite(posSB, &sb) == FALLO) return FALLO;
+
+    // limpiar el bloque reservado, en caso de que sea un bloque reutilizado
+    memset(aux, 0, BLOCKSIZE);
+    if (bwrite(nblock, aux) == FALLO) return FALLO;
+
+    return nblock;
 }

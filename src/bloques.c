@@ -27,8 +27,11 @@ int bmount(const char *camino) {
     //                   = 0644
     mode_t mask = umask(000);
     // Abrir/crear el fichero con los permisos por defecto (FILE_MODE)
-    if ((fd = open(camino, O_RDWR | O_CREAT, FILE_MODE)) < 0) ERRSYS("open");
-    else ret = fd;
+    if ((fd = open(camino, O_RDWR | O_CREAT, FILE_MODE)) < 0) {
+        ERRSYS("open");
+    } else {
+        ret = fd;
+    }
     umask(mask); // Restaurar la antigua mascara de creación
     return ret;
 }
