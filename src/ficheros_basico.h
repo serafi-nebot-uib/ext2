@@ -27,7 +27,8 @@ typedef union {
     char padding[BLOCKSIZE];                                    // Relleno para ocupar el bloque completo
 } superbloque_t;
 
-#define INODOSIZE 128 // tamaño en bytes de un inodo
+#define INODOSIZE           128 // tamaño en bytes de un inodo
+#define INODOS_IN_BLOCK     (BLOCKSIZE/INODOSIZE) // numero de inodos en un bloque
 
 typedef union {
     struct {

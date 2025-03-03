@@ -39,7 +39,7 @@ int bmount(const char *camino) {
 /**
  * Desmontar el dispositivo virtual cerrando el fichero
  *
- * @return 0 si se ha desmontado correctamente el dispositivo virtual, FALLO en caso contrario
+ * @return EXITO si se ha desmontado correctamente el dispositivo virtual, FALLO en caso contrario
  */
 int bumount() {
     int ret = 0;

@@ -3,6 +3,7 @@
 
 static unsigned char block_buff[BLOCKSIZE] = {};
 static superbloque_t sb = {};
+static inodo_t inodos[INODOS_IN_BLOCK] = {};
 
 /**
  * Calcular el tamaño en bloques para el mapa de bits
@@ -121,7 +122,7 @@ int initAI() {
  *
  * @param nbloque numero de bloque que modificar en el mapa de bits
  * @param bit nuevo valor del bit a midificar
- * @return 0 si se escribe el valor correctamente, FALLO en caso contrario
+ * @return EXITO si se escribe el valor correctamente, FALLO en caso contrario
  */
 int escribir_bit(unsigned int nbloque, unsigned int bit) {
     if (bread(posSB, &sb) == FALLO) return FALLO;
@@ -242,4 +243,49 @@ int liberar_bloque(unsigned int nbloque) {
     sb.cantBloquesLibres++;
     if (bwrite(posSB, &sb) == FALLO) return FALLO;
     return nbloque;
+}
+
+/**
+ * Escribir inodo en el array de inodos.
+ *
+ * @param ninodo índice del inodo dentro del array de inodos
+ * @param inodo puntero al inodo a escribir
+ * @return EXITO si se ha escrito el inodo correctamente, FALLO en caso contrario
+ */
+int escribir_inodo(unsigned int ninodo, inodo_t *inodo) {
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+
+    unsigned int nblock = sb.posPrimerBloqueAI + ninodo / INODOS_IN_BLOCK; // numero de bloque en el que se encuentra el inodo
+    unsigned int inodo_idx = ninodo % INODOS_IN_BLOCK; // indice del inodo dentro del bloque
+
+    DEBUG("nblock: %u", nblock);
+    DEBUG("inodo_idx: %u", inodo_idx);
+
+    if (bread(nblock, inodos) == FALLO) return FALLO;
+    inodos[inodo_idx] = *inodo;
+    if (bwrite(nblock, inodos) == FALLO) return FALLO;
+
+    return EXITO;
+}
+
+/**
+ * Leer inodo en el array de inodos.
+ *
+ * @param ninodo índice del inodo dentro del array de inodos
+ * @param inodo puntero al inodo donde se van a leer los datos
+ * @return EXITO si se ha leído el inodo correctamente, FALLO en caso contrario
+ */
+int leer_inodo(unsigned int ninodo, inodo_t *inodo) {
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+
+    unsigned int nblock = sb.posPrimerBloqueAI + ninodo / INODOS_IN_BLOCK; // numero de bloque en el que se encuentra el inodo
+    unsigned int inodo_idx = ninodo % INODOS_IN_BLOCK; // indice del inodo dentro del bloque
+
+    DEBUG("nblock: %u", nblock);
+    DEBUG("inodo_idx: %u", inodo_idx);
+
+    if (bread(nblock, inodos) == FALLO) return FALLO;
+    *inodo = inodos[inodo_idx];
+
+    return EXITO;
 }
