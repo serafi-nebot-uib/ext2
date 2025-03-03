@@ -1,3 +1,5 @@
+#include <time.h>
+
 #include "ficheros_basico.h"
 #include "bloques.h"
 
@@ -288,4 +290,43 @@ int leer_inodo(unsigned int ninodo, inodo_t *inodo) {
     *inodo = inodos[inodo_idx];
 
     return EXITO;
+}
+
+/**
+ * Reservar inodo
+ *
+ * @param tipo tipo del inodo a reservar
+ * @param permisos permisos del inodo a reservar
+ * @return poición del inodo reservado en el array de inodos
+ */
+int reservar_inodo(unsigned char tipo, unsigned char permisos) {
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+
+    if (sb.cantInodosLibres == 0) {
+        ERROR("no hay inodos libres");
+        return FALLO;
+    }
+
+    inodo_t inodo = {};
+    unsigned int inodo_pos = sb.posPrimerInodoLibre;
+    if (leer_inodo(inodo_pos, &inodo) == FALLO) return FALLO;
+    inodo.tipo = tipo;
+    inodo.permisos = permisos;
+    inodo.nlinks = 1;
+    inodo.tamEnBytesLog = 0;
+    time_t t = time(NULL);
+    inodo.atime = t;
+    inodo.mtime = t;
+    inodo.ctime = t;
+    inodo.btime = t;
+    inodo.numBloquesOcupados = 0;
+    memset(inodo.punterosDirectos, 0, 12*sizeof(unsigned int));
+    memset(inodo.punterosIndirectos, 0, 12*sizeof(unsigned int));
+    if (escribir_inodo(inodo_pos, &inodo) == FALLO) return FALLO;
+
+    sb.posPrimerInodoLibre = inodo.punterosDirectos[0];
+    sb.cantInodosLibres--;
+    if (bwrite(posSB, &sb) == FALLO) return FALLO;
+
+    return inodo_pos;
 }
