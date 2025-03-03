@@ -178,6 +178,8 @@ int leer_bit(unsigned int nbloque) {
 
 /**
  * Reservar el primer bloque libre y lo resetea a 0.
+ *
+ * @return numero de bloque reservado, FALLO en caso de error
  */
 int reservar_bloque() {
     if (bread(posSB, &sb) == FALLO) return FALLO;
@@ -226,4 +228,18 @@ int reservar_bloque() {
     if (bwrite(nblock, aux) == FALLO) return FALLO;
 
     return nblock;
+}
+
+/**
+ * Liberar bloque.
+ *
+ * @param nbloque numero de bloque a liberar
+ * @return numero de bloque liberado, FALLO en caso de error
+ */
+int liberar_bloque(unsigned int nbloque) {
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+    if (escribir_bit(nbloque, 0) == FALLO) return FALLO;
+    sb.cantBloquesLibres++;
+    if (bwrite(posSB, &sb) == FALLO) return FALLO;
+    return nbloque;
 }
