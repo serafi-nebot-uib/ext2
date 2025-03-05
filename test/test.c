@@ -147,6 +147,32 @@ void test_leer_escribir_bit() {
     DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
 }
 
+// right now only checks if blocks can be reserved/freed and in the order it does so
+void test_reservar_bloque() {
+    DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
+    assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+
+    assert(initSB(DEFAULT_BLOCK_CNT, DEFAULT_BLOCK_CNT / 4) != FALLO);
+    assert(initMB() != FALLO);
+    assert(initAI() != FALLO);
+
+    unsigned int blocks[5] = {};
+    for (unsigned int i = 0; i < sizeof(blocks) / sizeof(*blocks); i++) {
+        blocks[i] = reservar_bloque();
+        assert(blocks[i] != FALLO);
+        if (i > 0) assert(blocks[i-1]+1 == blocks[i]);
+    }
+
+    for (unsigned int i = 0; i < sizeof(blocks) / sizeof(*blocks); i++) {
+        assert(leer_bit(blocks[i]) == 1);
+        assert(liberar_bloque(blocks[i]) == blocks[i]);
+        assert(leer_bit(blocks[i]) == 0);
+    }
+
+    assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+    DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
+}
+
 // TODO: reservar_bloque test
 
 int main(int argc, char **argv) {
@@ -156,5 +182,6 @@ int main(int argc, char **argv) {
     test_bloques_tam();
     test_init_fs();
     test_leer_escribir_bit();
+    test_reservar_bloque();
     return 0;
 }

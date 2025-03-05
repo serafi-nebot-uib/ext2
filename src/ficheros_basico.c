@@ -224,6 +224,7 @@ int reservar_bloque() {
     DEBUG("nblock: %u", nblock);
     if (escribir_bit(nblock, 1) == FALLO) return FALLO;
     sb.cantBloquesLibres--;
+    DEBUG("sb.cantBloquesLibres: %u", sb.cantBloquesLibres);
     if (bwrite(posSB, &sb) == FALLO) return FALLO;
 
     // limpiar el bloque reservado, en caso de que sea un bloque reutilizado
@@ -243,6 +244,7 @@ int liberar_bloque(unsigned int nbloque) {
     if (bread(posSB, &sb) == FALLO) return FALLO;
     if (escribir_bit(nbloque, 0) == FALLO) return FALLO;
     sb.cantBloquesLibres++;
+    DEBUG("sb.cantBloquesLibres: %u", sb.cantBloquesLibres);
     if (bwrite(posSB, &sb) == FALLO) return FALLO;
     return nbloque;
 }
@@ -321,7 +323,7 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos) {
     inodo.btime = t;
     inodo.numBloquesOcupados = 0;
     memset(inodo.punterosDirectos, 0, 12*sizeof(unsigned int));
-    memset(inodo.punterosIndirectos, 0, 12*sizeof(unsigned int));
+    memset(inodo.punterosIndirectos, 0, 3*sizeof(unsigned int));
     if (escribir_inodo(inodo_pos, &inodo) == FALLO) return FALLO;
 
     sb.posPrimerInodoLibre = inodo.punterosDirectos[0];
