@@ -30,14 +30,15 @@ int main(int argc, char **argv) {
         }
     }
 
-    initSB(nbloques, nbloques / 4);
-    initMB();
-    initAI();
+    int ret = EXITO;
+
+    if (initSB(nbloques, nbloques/4) == FALLO || initMB() == FALLO || initAI() == FALLO || reservar_inodo('d', 7) == FALLO)
+        ret = FALLO;
 
     if (bumount() == FALLO) {
         fprintf(stderr, "error al desmontar el dispositivo virtual %s\n", nombre_dispositivo);
         return FALLO;
     }
 
-    return EXITO;
+    return ret;
 }

@@ -1,7 +1,4 @@
-#include <time.h>
-
 #include "ficheros_basico.h"
-#include "bloques.h"
 
 static unsigned char block_buff[BLOCKSIZE] = {};
 static superbloque_t sb = {};
@@ -105,12 +102,15 @@ int initAI() {
 
     inodo_t inodos[BLOCKSIZE / INODOSIZE];
     unsigned int inode_next = sb.posPrimerInodoLibre + 1;
-    for (int i = sb.posPrimerBloqueAI; i <= sb.posUltimoBloqueAI && inode_next < sb.totInodos; i++) {
+    for (int i = sb.posPrimerBloqueAI; i <= sb.posUltimoBloqueAI; i++) {
         if (bread(i, inodos) == FALLO)  return FALLO;
         for (int j = 0; j < BLOCKSIZE / INODOSIZE; j++) {
             inodos[j].tipo = 'l';
-            if (inode_next < sb.totInodos) inodos[j].punterosDirectos[0] = inode_next++;
-            else inodos[j].punterosDirectos[0] = UINT_MAX;
+            if (inode_next >= sb.totInodos) {
+                inodos[j].punterosDirectos[0] = UINT_MAX;
+                break;
+            }
+            inodos[j].punterosDirectos[0] = inode_next++;
         }
         if (bwrite(i, inodos) == FALLO) return FALLO;
     }
@@ -322,13 +322,15 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos) {
     inodo.ctime = t;
     inodo.btime = t;
     inodo.numBloquesOcupados = 0;
-    memset(inodo.punterosDirectos, 0, 12*sizeof(unsigned int));
-    memset(inodo.punterosIndirectos, 0, 3*sizeof(unsigned int));
-    if (escribir_inodo(inodo_pos, &inodo) == FALLO) return FALLO;
 
+    // cambiar el superbloque antes de resetear los punteros del inodo
     sb.posPrimerInodoLibre = inodo.punterosDirectos[0];
     sb.cantInodosLibres--;
     if (bwrite(posSB, &sb) == FALLO) return FALLO;
+
+    memset(inodo.punterosDirectos, 0, 12*sizeof(unsigned int));
+    memset(inodo.punterosIndirectos, 0, 3*sizeof(unsigned int));
+    if (escribir_inodo(inodo_pos, &inodo) == FALLO) return FALLO;
 
     return inodo_pos;
 }

@@ -3,8 +3,10 @@
 
 // TODO: load virtual device with mmap
 
-#include "bloques.h"
 #include <limits.h>
+#include <time.h>
+
+#include "bloques.h"
 
 #define posSB 0 // el superbloque se escribe en el primer bloque de nuestro FS
 #define tamSB 1
