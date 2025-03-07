@@ -2,6 +2,7 @@
 * FILENAME: bloques.c
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
+
 #include "bloques.h"
 
 // Descriptor del fichero actual

@@ -1,3 +1,8 @@
+/**************************************************************************
+* FILENAME: leer_sf.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
+
 #include "bloques.h"
 #include "ficheros_basico.h"
 
@@ -51,6 +56,7 @@ int main(int argc, char **argv) {
     printf("Liberamos ese bloque y después SB.cantBloquesLibres = %u\n", sb.cantBloquesLibres);
     printf("\n");
 
+    printf("MAPA DE BITS CON BLOQUES DE METADATOS OCUPADOS\n");
     printf("posSB: %u → leer_bit(%u) = %u\n", posSB, posSB, leer_bit(posSB));
     printf("SB.posPrimerBloqueMB: %u → leer_bit(%u) = %u\n", sb.posPrimerBloqueMB, sb.posPrimerBloqueMB, leer_bit(sb.posPrimerBloqueMB));
     printf("SB.posUltimoBloqueMB: %u → leer_bit(%u) = %u\n", sb.posUltimoBloqueMB, sb.posUltimoBloqueMB, leer_bit(sb.posUltimoBloqueMB));

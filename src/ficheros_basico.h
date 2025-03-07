@@ -1,3 +1,8 @@
+/**************************************************************************
+* FILENAME: ficheros_basico.h
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
+
 #ifndef __FICHEROS_BASICO_H__
 #define __FICHEROS_BASICO_H__
 
@@ -8,7 +13,7 @@
 
 #include "bloques.h"
 
-#define posSB 0 // el superbloque se escribe en el primer bloque de nuestro FS
+#define posSB 0 // Posición predeterminada, el superbloque se escribe en el primer bloque de nuestro FS
 #define tamSB 1
 
 typedef union {
