@@ -334,3 +334,72 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos) {
 
     return inodo_pos;
 }
+
+/**
+ * Obtener el rango de punteros en el que se situa el bloque lógico nblogico
+ *
+ * @param inodo inodo en el que buscar los punteros
+ * @param nblogico numero de bloque lógico del cual obtener el puntero
+ * @param ptr puntero a la variable que se va a actualizar con el valor del puntero correspondiente
+ * @return 0 si nblogico esta en los punteros directos, 1 si esta en punteros indirectos 0, 2 si esta en punteros indirectos 1, 3 si esta dentro de punteros indirectos 2 y -1 si esta fuera de rango
+ */
+int obtener_nRangoBL(inodo_t *inodo, unsigned int nblogico, unsigned int *ptr) {
+    if (nblogico < DIRECTOS) {
+        *ptr = inodo->punterosDirectos[0];
+        return 0;
+    } else if (nblogico < INDIRECTOS0) {
+        *ptr = inodo->punterosIndirectos[0];
+        return 1;
+    } else if (nblogico < INDIRECTOS1) {
+        *ptr = inodo->punterosIndirectos[1];
+        return 2;
+    } else if (nblogico < INDIRECTOS2) {
+        *ptr = inodo->punterosIndirectos[2];
+        return 3;
+    }
+    *ptr = 0;
+    ERROR("bloque logico %d fuera de rango", nblogico);
+    return -1;
+}
+
+/**
+ * Obtener índice dentro del array punteros correspondiente al bloque lógico y nivel de puntero indicado
+ *
+ * @param nblogico número de bloque lógico
+ * @param nuvel_punteros nivel del array de punteros
+ * @return índice dentro del array de punteros correspondiente al bloque lógico y nivel de puntero indicado
+ */
+int obtener_indice(unsigned int nblogico, int nivel_punteros) {
+    if (nblogico < DIRECTOS) return nblogico;
+    if (nblogico < INDIRECTOS0) return nblogico - DIRECTOS;
+    if (nblogico < INDIRECTOS1) {
+        if (nivel_punteros == 2) return (nblogico - INDIRECTOS0) / NPUNTEROS;
+        if (nivel_punteros == 1) return (nblogico - INDIRECTOS0) % NPUNTEROS;
+        ERROR("nivel puntero %u invalido para numero de bloque lógico %u", nivel_punteros, nblogico);
+        return FALLO;
+    }
+    if (nblogico < INDIRECTOS2) {
+        if (nivel_punteros == 3) return (nblogico - INDIRECTOS1) / (NPUNTEROS * NPUNTEROS);
+        if (nivel_punteros == 2) return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) / NPUNTEROS;
+        if (nivel_punteros == 1) return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) % NPUNTEROS;
+        ERROR("nivel puntero %u invalido para numero de bloque lógico %u", nivel_punteros, nblogico);
+        return FALLO;
+    }
+    ERROR("bloque logico %u fuera de rango", nblogico);
+    return FALLO;
+}
+
+int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned char reservar) {
+    inodo_t inode = {};
+    if (leer_inodo(ninodo, &inode) == FALLO) return FALLO;
+
+    unsigned int ptr = 0, idx = 0;
+    int lvl = obtener_nRangoBL(&inode, nblogico, &ptr);
+    if (lvl < 0) return FALLO;
+
+    while (lvl > 0) {
+        if ((idx = obtener_indice(nblogico, lvl)) == FALLO) return FALLO;
+    }
+
+    return EXITO;
+}
