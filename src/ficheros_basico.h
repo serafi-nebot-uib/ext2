@@ -1,3 +1,8 @@
+/**************************************************************************
+* FILENAME: ficheros_basico.h
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
+
 #ifndef __FICHEROS_BASICO_H__
 #define __FICHEROS_BASICO_H__
 
@@ -8,7 +13,7 @@
 
 #include "bloques.h"
 
-#define posSB 0 // el superbloque se escribe en el primer bloque de nuestro FS
+#define posSB 0 // posición predeterminada, el superbloque se escribe en el primer bloque de nuestro FS
 #define tamSB 1
 
 #define NPUNTEROS (BLOCKSIZE / sizeof(unsigned int))   // 256 punteros por bloque
@@ -19,20 +24,20 @@
 
 typedef union {
     struct {
-        unsigned int posPrimerBloqueMB;                         // Posición absoluta del primer bloque del mapa de bits
-        unsigned int posUltimoBloqueMB;                         // Posición absoluta del último bloque del mapa de bits
-        unsigned int posPrimerBloqueAI;                         // Posición absoluta del primer bloque del array de inodos
-        unsigned int posUltimoBloqueAI;                         // Posición absoluta del último bloque del array de inodos
-        unsigned int posPrimerBloqueDatos;                      // Posición absoluta del primer bloque de datos
-        unsigned int posUltimoBloqueDatos;                      // Posición absoluta del último bloque de datos
-        unsigned int posInodoRaiz;                              // Posición del inodo del directorio raíz (relativa al AI)
-        unsigned int posPrimerInodoLibre;                       // Posición del primer inodo libre (relativa al AI)
-        unsigned int cantBloquesLibres;                         // Cantidad de bloques libres (en todo el disco)
-        unsigned int cantInodosLibres;                          // Cantidad de inodos libres (en el AI)
-        unsigned int totBloques;                                // Cantidad total de bloques del disco
-        unsigned int totInodos;                                 // Cantidad total de inodos (heurística)
+        unsigned int posPrimerBloqueMB;                         // posición absoluta del primer bloque del mapa de bits
+        unsigned int posUltimoBloqueMB;                         // posición absoluta del último bloque del mapa de bits
+        unsigned int posPrimerBloqueAI;                         // posición absoluta del primer bloque del array de inodos
+        unsigned int posUltimoBloqueAI;                         // posición absoluta del último bloque del array de inodos
+        unsigned int posPrimerBloqueDatos;                      // posición absoluta del primer bloque de datos
+        unsigned int posUltimoBloqueDatos;                      // posición absoluta del último bloque de datos
+        unsigned int posInodoRaiz;                              // posición del inodo del directorio raíz (relativa al AI)
+        unsigned int posPrimerInodoLibre;                       // posición del primer inodo libre (relativa al AI)
+        unsigned int cantBloquesLibres;                         // cantidad de bloques libres (en todo el disco)
+        unsigned int cantInodosLibres;                          // cantidad de inodos libres (en el AI)
+        unsigned int totBloques;                                // cantidad total de bloques del disco
+        unsigned int totInodos;                                 // cantidad total de inodos (heurística)
     };
-    char padding[BLOCKSIZE];                                    // Relleno para ocupar el bloque completo
+    char padding[BLOCKSIZE];                                    // relleno para ocupar el bloque completo
 } superbloque_t;
 
 #define INODOSIZE           128 // tamaño en bytes de un inodo
@@ -40,15 +45,15 @@ typedef union {
 
 typedef union {
     struct {
-        unsigned char tipo;                     // Tipo ('l':libre, 'd':directorio o 'f':fichero)
-        unsigned char permisos;                 // Permisos (lectura y/o escritura y/o ejecución)
-        time_t atime;                           // Fecha y hora del último acceso a datos: atime
-        time_t mtime;                           // Fecha y hora de la última modificación de datos: mtime
-        time_t ctime;                           // Fecha y hora de la última modificación del inodo: ctime
-        time_t btime;                           // Fecha y hora de creación del inodo: btime (birth)
-        unsigned int nlinks;                    // Cantidad de enlaces de entradas en directorio
-        unsigned int tamEnBytesLog;             // Tamaño en bytes lógicos
-        unsigned int numBloquesOcupados;        // Cantidad de bloques ocupados zona de datos
+        unsigned char tipo;                     // tipo ('l':libre, 'd':directorio o 'f':fichero)
+        unsigned char permisos;                 // permisos (lectura y/o escritura y/o ejecución)
+        time_t atime;                           // fecha y hora del último acceso a datos: atime
+        time_t mtime;                           // fecha y hora de la última modificación de datos: mtime
+        time_t ctime;                           // fecha y hora de la última modificación del inodo: ctime
+        time_t btime;                           // fecha y hora de creación del inodo: btime (birth)
+        unsigned int nlinks;                    // cantidad de enlaces de entradas en directorio
+        unsigned int tamEnBytesLog;             // tamaño en bytes lógicos
+        unsigned int numBloquesOcupados;        // cantidad de bloques ocupados zona de datos
         unsigned int punterosDirectos[12];      // 12 punteros directos
         unsigned int punterosIndirectos[3];     // 3 punteros indirectos: 1 simple, 1 doble, 1 triple
     };
