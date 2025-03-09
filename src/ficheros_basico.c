@@ -414,22 +414,8 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros) {
 }
 
 int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned char reservar) {
-    DEBUG("args: ninodo=%u; nblogico=%u; reservar=%hhu", ninodo, nblogico, reservar);
-
     inodo_t inode = {};
     if (leer_inodo(ninodo, &inode) == FALLO) return FALLO;
-
-    DEBUG("inode.tipo: %u", inode.tipo);
-    DEBUG("inode.permisos: %u", inode.permisos);
-    DEBUG("inode.atime: %lu", inode.atime);
-    DEBUG("inode.mtime: %lu", inode.mtime);
-    DEBUG("inode.ctime: %lu", inode.ctime);
-    DEBUG("inode.btime: %lu", inode.btime);
-    DEBUG("inode.nlinks: %u", inode.nlinks);
-    DEBUG("inode.tamEnBytesLog: %u", inode.tamEnBytesLog);
-    DEBUG("inode.numBloquesOcupados: %u", inode.numBloquesOcupados);
-    DEBUG("inode.punterosDirectos: %p", inode.punterosDirectos);
-    DEBUG("inode.punterosIndirectos: %p", inode.punterosIndirectos);
 
     unsigned int *ptr = 0;
     int depth = obtener_nRangoBL(&inode, nblogico, &ptr);
@@ -438,40 +424,31 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
     if (idx == FALLO) return FALLO;
     unsigned int nblock = ptr[idx];
 
-    DEBUG("ptr: %p", ptr);
-    DEBUG("depth: %d", depth);
-    DEBUG("idx: %d", idx);
-    DEBUG("nblock: %d", nblock);
-
     if (nblock == 0) {
         if (!reservar) return FALLO;
         ptr[idx] = reservar_bloque();
         nblock = ptr[idx];
         inode.numBloquesOcupados++;
         inode.ctime = time(NULL);
-        DEBUG("reserved block: %u", ptr[idx]);
+        printf("reserved block: %u\n", ptr[idx]);
         if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
     }
 
     unsigned int buff[NPUNTEROS] = {};
     for (unsigned int lvl = depth; lvl > 0; lvl--) {
-        DEBUG("\tlvl: %d -> nblock: %u", lvl, nblock);
         if (bread(nblock, buff) == FALLO) return FALLO;
         idx = obtener_indice(nblogico, lvl);
-
         if (buff[idx] == 0) {
             if (!reservar) return FALLO;
             buff[idx] = reservar_bloque();
-            DEBUG("reserved block: %u", buff[idx]);
+            printf("reserved block: %u\n", buff[idx]);
             if (bwrite(nblock, buff) == FALLO) return FALLO;
             inode.numBloquesOcupados++;
             inode.ctime = time(NULL);
             if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
         }
-
         nblock = buff[idx];
     }
 
-    DEBUG("ret: %u", nblock);
     return nblock;
 }
