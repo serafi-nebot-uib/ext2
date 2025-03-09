@@ -5,11 +5,21 @@
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
-#ifndef __DEBUG_H__
-#define __DEBUG_H__
+#ifndef __LOGGING_H__
+#define __LOGGING_H__
+
+// #define DEBUG_LVL  0
+//
+// #define DEBUG(lvl, ...) { \
+//     if (DEBUG_LVL >= (lvl)) { \
+//         fprintf(stderr, GRAY "%s\t%s\t%d: " RESET, __FILE__, __func__, __LINE__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); \
+//         fprintf(stderr, __VA_ARGS__); \
+//         fprintf(stderr, "\n"); \
+//     } \
+// }
 
 #ifndef DEBUG_EN
-#define DEBUG_EN 1
+#define DEBUG_EN 0
 #endif
 
 #ifndef DEBUG_FILE_NAME
@@ -20,7 +30,7 @@
 #if DEBUG_FILE_NAME
 #define DEBUG(...) { fprintf(stderr, GRAY "%s\t%s\t%d: " RESET, __FILE__, __func__, __LINE__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }
 #else
-#define DEBUG(...) { fprintf(stderr, GRAY "%s\t%d: " RESET, __func__, __LINE__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }
+#define DEBUG(...) { fprintf(stdout, GRAY "%s\t%d: " RESET, __func__, __LINE__); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); }
 #endif
 #else
 #define DEBUG(...) {}

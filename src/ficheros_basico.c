@@ -4,6 +4,7 @@
 **************************************************************************/
 
 #include "ficheros_basico.h"
+#include "bloques.h"
 
 static unsigned char block_buff[BLOCKSIZE] = {};
 static superbloque_t sb = {};
@@ -366,18 +367,18 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos) {
  * @param ptr puntero a la variable que se va a actualizar con el valor del puntero correspondiente
  * @return 0 si nblogico esta en los punteros directos, 1 si esta en punteros indirectos 0, 2 si esta en punteros indirectos 1, 3 si esta dentro de punteros indirectos 2 y -1 si esta fuera de rango
  */
-int obtener_nRangoBL(inodo_t *inodo, unsigned int nblogico, unsigned int *ptr) {
+int obtener_nRangoBL(inodo_t *inodo, unsigned int nblogico, unsigned int **ptr) {
     if (nblogico < DIRECTOS) {
-        *ptr = inodo->punterosDirectos[0];
+        *ptr = inodo->punterosDirectos;
         return 0;
     } else if (nblogico < INDIRECTOS0) {
-        *ptr = inodo->punterosIndirectos[0];
+        *ptr = inodo->punterosIndirectos;
         return 1;
     } else if (nblogico < INDIRECTOS1) {
-        *ptr = inodo->punterosIndirectos[1];
+        *ptr = inodo->punterosIndirectos;
         return 2;
     } else if (nblogico < INDIRECTOS2) {
-        *ptr = inodo->punterosIndirectos[2];
+        *ptr = inodo->punterosIndirectos;
         return 3;
     }
     *ptr = 0;
@@ -413,16 +414,64 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros) {
 }
 
 int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned char reservar) {
+    DEBUG("args: ninodo=%u; nblogico=%u; reservar=%hhu", ninodo, nblogico, reservar);
+
     inodo_t inode = {};
     if (leer_inodo(ninodo, &inode) == FALLO) return FALLO;
 
-    unsigned int ptr = 0, idx = 0;
-    int lvl = obtener_nRangoBL(&inode, nblogico, &ptr);
-    if (lvl < 0) return FALLO;
+    DEBUG("inode.tipo: %u", inode.tipo);
+    DEBUG("inode.permisos: %u", inode.permisos);
+    DEBUG("inode.atime: %lu", inode.atime);
+    DEBUG("inode.mtime: %lu", inode.mtime);
+    DEBUG("inode.ctime: %lu", inode.ctime);
+    DEBUG("inode.btime: %lu", inode.btime);
+    DEBUG("inode.nlinks: %u", inode.nlinks);
+    DEBUG("inode.tamEnBytesLog: %u", inode.tamEnBytesLog);
+    DEBUG("inode.numBloquesOcupados: %u", inode.numBloquesOcupados);
+    DEBUG("inode.punterosDirectos: %p", inode.punterosDirectos);
+    DEBUG("inode.punterosIndirectos: %p", inode.punterosIndirectos);
 
-    while (lvl > 0) {
-        if ((idx = obtener_indice(nblogico, lvl)) == FALLO) return FALLO;
+    unsigned int *ptr = 0;
+    int depth = obtener_nRangoBL(&inode, nblogico, &ptr);
+    if (depth < 0) return FALLO;
+    int idx = depth == 0 ? obtener_indice(nblogico, depth) : depth-1;
+    if (idx == FALLO) return FALLO;
+    unsigned int nblock = ptr[idx];
+
+    DEBUG("ptr: %p", ptr);
+    DEBUG("depth: %d", depth);
+    DEBUG("idx: %d", idx);
+    DEBUG("nblock: %d", nblock);
+
+    if (nblock == 0) {
+        if (!reservar) return FALLO;
+        ptr[idx] = reservar_bloque();
+        nblock = ptr[idx];
+        inode.numBloquesOcupados++;
+        inode.ctime = time(NULL);
+        DEBUG("reserved block: %u", ptr[idx]);
+        if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
     }
 
-    return EXITO;
+    unsigned int buff[NPUNTEROS] = {};
+    for (unsigned int lvl = depth; lvl > 0; lvl--) {
+        DEBUG("\tlvl: %d -> nblock: %u", lvl, nblock);
+        if (bread(nblock, buff) == FALLO) return FALLO;
+        idx = obtener_indice(nblogico, lvl);
+
+        if (buff[idx] == 0) {
+            if (!reservar) return FALLO;
+            buff[idx] = reservar_bloque();
+            DEBUG("reserved block: %u", buff[idx]);
+            if (bwrite(nblock, buff) == FALLO) return FALLO;
+            inode.numBloquesOcupados++;
+            inode.ctime = time(NULL);
+            if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
+        }
+
+        nblock = buff[idx];
+    }
+
+    DEBUG("ret: %u", nblock);
+    return nblock;
 }

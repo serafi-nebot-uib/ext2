@@ -173,15 +173,39 @@ void test_reservar_bloque() {
     DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
 }
 
+void test_traducir_bloque_inodo() {
+    DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
+    assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+
+    assert(initSB(DEFAULT_BLOCK_CNT, DEFAULT_BLOCK_CNT / 4) != FALLO);
+    assert(initMB() != FALLO);
+    assert(initAI() != FALLO);
+
+    int ninode = reservar_inodo('d', 07);
+    assert(ninode != FALLO);
+
+    unsigned int tests[] = { 8, 204, 30004, 400004, 468750 };
+    for (unsigned int i = 0; i < sizeof(tests) / sizeof(*tests); i++) {
+        printf("%s: %u\n", __func__, tests[i]);
+        assert(traducir_bloque_inodo(ninode, tests[i], 0) == FALLO);
+        assert(traducir_bloque_inodo(ninode, tests[i], 1) != FALLO);
+        assert(traducir_bloque_inodo(ninode, tests[i], 0) != FALLO);
+    }
+
+    assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+    DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
+}
+
 // TODO: reservar_bloque test
 
 int main(int argc, char **argv) {
-    test_mount_umount();
-    test_bread_bwrite();
-    test_struct_size();
-    test_bloques_tam();
-    test_init_fs();
-    test_leer_escribir_bit();
-    test_reservar_bloque();
+    // test_mount_umount();
+    // test_bread_bwrite();
+    // test_struct_size();
+    // test_bloques_tam();
+    // test_init_fs();
+    // test_leer_escribir_bit();
+    // test_reservar_bloque();
+    test_traducir_bloque_inodo();
     return 0;
 }
