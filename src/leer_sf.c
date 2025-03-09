@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
     // printf("tamEnBytesLog: %u\n", inodo.tamEnBytesLog);
     // printf("numBloquesOcupados: %u\n", inodo.numBloquesOcupados);
 
-    printf("INODO 1. TRADUCCION DE LOS BLOQUES LOGICOS 8, 204, 30.004, 400.004 y 468.750\n");
+    printf("INODO 1. TRADUCCION DE LOS BLOQUES LOGICOS 8, 204, 30.004, 400.004 y 468.750\n\n");
     unsigned int blocks[] = { 8, 204, 30004, 400004, 468750 };
     int ninode = reservar_inodo('f', 06);
     for (unsigned int i = 0; i < sizeof(blocks) / sizeof(*blocks); i++) {

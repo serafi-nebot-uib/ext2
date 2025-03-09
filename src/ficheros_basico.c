@@ -417,37 +417,51 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
     inodo_t inode = {};
     if (leer_inodo(ninodo, &inode) == FALLO) return FALLO;
 
-    unsigned int *ptr = 0;
+    unsigned int *ptr = 0; // puntero al array de punteros correspondiente al bloque logico del inodo
     int depth = obtener_nRangoBL(&inode, nblogico, &ptr);
     if (depth < 0) return FALLO;
     int idx = depth == 0 ? obtener_indice(nblogico, depth) : depth-1;
     if (idx == FALLO) return FALLO;
+
     unsigned int nblock = ptr[idx];
+    unsigned int buff[NPUNTEROS] = {};
 
     if (nblock == 0) {
         if (!reservar) return FALLO;
+
         ptr[idx] = reservar_bloque();
         nblock = ptr[idx];
+        printf("reserved block: %u\n", ptr[idx]);
+
         inode.numBloquesOcupados++;
         inode.ctime = time(NULL);
-        printf("reserved block: %u\n", ptr[idx]);
         if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
+
+        memset(buff, 0, sizeof(buff));
+        if (bwrite(nblock, buff) == FALLO) return FALLO;
     }
 
-    unsigned int buff[NPUNTEROS] = {};
     for (unsigned int lvl = depth; lvl > 0; lvl--) {
         if (bread(nblock, buff) == FALLO) return FALLO;
-        idx = obtener_indice(nblogico, lvl);
+        if ((idx = obtener_indice(nblogico, lvl)) == FALLO) return FALLO;
+
         if (buff[idx] == 0) {
             if (!reservar) return FALLO;
+
             buff[idx] = reservar_bloque();
-            printf("reserved block: %u\n", buff[idx]);
             if (bwrite(nblock, buff) == FALLO) return FALLO;
+            printf("reserved block: %u\n", buff[idx]);
+
             inode.numBloquesOcupados++;
             inode.ctime = time(NULL);
             if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
+
+            nblock = buff[idx];
+            memset(buff, 0, sizeof(buff));
+            if (bwrite(nblock, buff) == FALLO) return FALLO;
+        } else {
+            nblock = buff[idx];
         }
-        nblock = buff[idx];
     }
 
     return nblock;
