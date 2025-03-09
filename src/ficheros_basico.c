@@ -50,7 +50,7 @@ int initSB(unsigned int nbloques, unsigned int ninodos) {
     sb.cantInodosLibres = ninodos;
     sb.totBloques = nbloques;
     sb.totInodos = ninodos;
-    return bwrite(posSB, &sb); // Escribe el superbloque en la posición predeterminada del dispositivo virtual
+    return bwrite(posSB, &sb);
 }
 
 /**
@@ -59,29 +59,29 @@ int initSB(unsigned int nbloques, unsigned int ninodos) {
  * @return EXITO si se escribe el valor correctamente, FALLO en caso contrario
  */
 int initMB() {
-    if (bread(posSB, &sb) == FALLO) return FALLO; // Lee el superbloque almacenado en el dispositivo virtual
+    if (bread(posSB, &sb) == FALLO) return FALLO; // lee el superbloque almacenado en el dispositivo virtual
 
-    DEBUG("sb.posPrimerBloqueMB: %d", sb.posPrimerBloqueMB);
-    DEBUG("sb.posUltimoBloqueMB: %d", sb.posUltimoBloqueMB);
-    DEBUG("sb.posPrimerBloqueAI: %d", sb.posPrimerBloqueAI);
-    DEBUG("sb.posUltimoBloqueAI: %d", sb.posUltimoBloqueAI);
-    DEBUG("sb.posPrimerBloqueDatos: %d", sb.posPrimerBloqueDatos);
-    DEBUG("sb.posUltimoBloqueDatos: %d", sb.posUltimoBloqueDatos);
-    DEBUG("sb.posInodoRaiz: %d", sb.posInodoRaiz);
-    DEBUG("sb.posPrimerInodoLibre: %d", sb.posPrimerInodoLibre);
-    DEBUG("sb.cantBloquesLibres: %d", sb.cantBloquesLibres);
-    DEBUG("sb.cantInodosLibres: %d", sb.cantInodosLibres);
-    DEBUG("sb.totBloques: %d", sb.totBloques);
-    DEBUG("sb.totInodos: %d", sb.totInodos);
+    DEBUG("sb.posPrimerBloqueMB: %u", sb.posPrimerBloqueMB);
+    DEBUG("sb.posUltimoBloqueMB: %u", sb.posUltimoBloqueMB);
+    DEBUG("sb.posPrimerBloqueAI: %u", sb.posPrimerBloqueAI);
+    DEBUG("sb.posUltimoBloqueAI: %u", sb.posUltimoBloqueAI);
+    DEBUG("sb.posPrimerBloqueDatos: %u", sb.posPrimerBloqueDatos);
+    DEBUG("sb.posUltimoBloqueDatos: %u", sb.posUltimoBloqueDatos);
+    DEBUG("sb.posInodoRaiz: %u", sb.posInodoRaiz);
+    DEBUG("sb.posPrimerInodoLibre: %u", sb.posPrimerInodoLibre);
+    DEBUG("sb.cantBloquesLibres: %u", sb.cantBloquesLibres);
+    DEBUG("sb.cantInodosLibres: %u", sb.cantInodosLibres);
+    DEBUG("sb.totBloques: %u", sb.totBloques);
+    DEBUG("sb.totInodos: %u", sb.totInodos);
 
-    int mb_bit_cnt = tamSB + tamMB(sb.totBloques) + tamAI(sb.totInodos); // Cantidad inicial de bits ocupados del Mapa de Bits
-    int mb_byte_cnt = mb_bit_cnt / 8;                                    // Cantidad inicial de bytes ocupados del Mapa de Bits
-    int mb_block_cnt = mb_byte_cnt / BLOCKSIZE;                          // Cantidad inicial de bloques ocupados del Mapa de Bits
-    int mb_extra_byte_off = mb_byte_cnt % BLOCKSIZE;                     // Cantidad adicional de bytes ocupados
-    int mb_extra_bit_cnt = mb_bit_cnt % 8;                               // Cantidad adicional de bits ocupados
+    int mb_bit_cnt = tamSB + tamMB(sb.totBloques) + tamAI(sb.totInodos); // cantidad inicial de bits ocupados del Mapa de Bits
+    int mb_byte_cnt = mb_bit_cnt / 8;                                    // cantidad inicial de bytes ocupados del Mapa de Bits
+    int mb_block_cnt = mb_byte_cnt / BLOCKSIZE;                          // cantidad inicial de bloques ocupados del Mapa de Bits
+    int mb_extra_byte_off = mb_byte_cnt % BLOCKSIZE;                     // cantidad adicional de bytes ocupados
+    int mb_extra_bit_cnt = mb_bit_cnt % 8;                               // cantidad adicional de bits ocupados
 
     DEBUG("mb_bit_cnt: %d", mb_bit_cnt);
-    DEBUG("mb_byte_cnt : %d", mb_byte_cnt);
+    DEBUG("mb_byte_cnt: %d", mb_byte_cnt);
     DEBUG("mb_block_cnt: %d", mb_block_cnt);
     DEBUG("mb_extra_byte_off: %d", mb_extra_byte_off);
     DEBUG("mb_extra_bit_cnt: %d", mb_extra_bit_cnt);
@@ -92,11 +92,11 @@ int initMB() {
 
     block_buff[mb_extra_byte_off] = ~((1 << (8 - mb_extra_bit_cnt)) - 1); 
     DEBUG("block_buff[%d]: %hhu", mb_extra_byte_off, block_buff[mb_extra_byte_off]);
-    for (int i = mb_extra_byte_off+1; i < BLOCKSIZE; i++) block_buff[i] = 0; // Los bytes restantes del bloque se ponen a 0
+    for (int i = mb_extra_byte_off+1; i < BLOCKSIZE; i++) block_buff[i] = 0; // los bytes restantes del bloque se ponen a 0
     if (bwrite(sb.posPrimerBloqueMB + mb_block_cnt, block_buff) == FALLO) return FALLO;
 
     sb.cantBloquesLibres -= mb_bit_cnt; // mb_bit_cnt = cantidad de bloques que ocupan los metadatos
-    if (bwrite(posSB, &sb) == FALLO) return FALLO; // Vuelve a escribir el superbloque actualizado en el dispositivo virtual
+    if (bwrite(posSB, &sb) == FALLO) return FALLO;
 
     return EXITO;
 }
@@ -107,21 +107,21 @@ int initMB() {
  * @return EXITO si se escribe el valor correctamente, FALLO en caso contrario
  */
 int initAI() {
-    if (bread(posSB, &sb) == FALLO) return FALLO; // Lee el superbloque almacenado en el dispositivo virtual
+    if (bread(posSB, &sb) == FALLO) return FALLO;
 
     inodo_t inodos[BLOCKSIZE / INODOSIZE];
     unsigned int inode_next = sb.posPrimerInodoLibre + 1; 
-    for (int i = sb.posPrimerBloqueAI; i <= sb.posUltimoBloqueAI; i++) { // Itera sobre todos los bloques que contienen inodos
-        if (bread(i, inodos) == FALLO)  return FALLO; // Lee un bloque y almacena los inodos que este contiene en un array
+    for (int i = sb.posPrimerBloqueAI; i <= sb.posUltimoBloqueAI; i++) { // itera sobre todos los bloques que contienen inodos
+        if (bread(i, inodos) == FALLO)  return FALLO; // lee un bloque y almacena los inodos que este contiene en un array
         for (int j = 0; j < BLOCKSIZE / INODOSIZE; j++) {
-            inodos[j].tipo = 'l'; // Pone cada inodo del bloque actual como libre
+            inodos[j].tipo = 'l'; // pone cada inodo del bloque actual como libre
             if (inode_next >= sb.totInodos) {
                 inodos[j].punterosDirectos[0] = UINT_MAX; 
                 break;
             }
-            inodos[j].punterosDirectos[0] = inode_next++; // Al estar todos libres, cada inodo apunta al siguiente
+            inodos[j].punterosDirectos[0] = inode_next++; // al estar todos libres, cada inodo apunta al siguiente
         }
-        if (bwrite(i, inodos) == FALLO) return FALLO; // Vuelve a escribir el bloque de inodos en el dispositivo virtual
+        if (bwrite(i, inodos) == FALLO) return FALLO; // vuelve a escribir el bloque de inodos en el dispositivo virtual
     }
 
     return EXITO;
@@ -136,12 +136,12 @@ int initAI() {
  * @return EXITO si se escribe el valor correctamente, FALLO en caso contrario
  */
 int escribir_bit(unsigned int nbloque, unsigned int bit) {
-    if (bread(posSB, &sb) == FALLO) return FALLO; // Lee el superbloque almacenado en el dispositivo virtual
+    if (bread(posSB, &sb) == FALLO) return FALLO; // lee el superbloque almacenado en el dispositivo virtual
 
-    unsigned int pos_byte = nbloque / 8;                                  // Byte dentro del MB que contiene el bit asociado al nbloque
-    unsigned int pos_bit = nbloque % 8;                                   // Bit del Byte anterior que contiene el bit asociado al nbloque
-    unsigned int idx_byte = pos_byte % BLOCKSIZE; // numBloqueMB          // Núm. de bloque dentro del MB donde se encuentra el Byte anterior
-    unsigned int idx_block = sb.posPrimerBloqueMB + pos_byte / BLOCKSIZE; // numBloqueAbs, Núm. de bloque absoluto
+    unsigned int pos_byte = nbloque / 8;                                  // byte dentro del MB que contiene el bit asociado al nbloque
+    unsigned int pos_bit = nbloque % 8;                                   // bit del byte anterior que contiene el bit asociado al nbloque
+    unsigned int idx_byte = pos_byte % BLOCKSIZE; // numBloqueMB          // núm. de bloque dentro del MB donde se encuentra el Byte anterior
+    unsigned int idx_block = sb.posPrimerBloqueMB + pos_byte / BLOCKSIZE; // numbloqueabs, Núm. de bloque absoluto
 
     DEBUG("input params: %u [nbloque], %u [bit (bitValue)]", nbloque, bit);
     DEBUG("pos_byte: %d", pos_byte);
@@ -149,17 +149,17 @@ int escribir_bit(unsigned int nbloque, unsigned int bit) {
     DEBUG("idx_byte: %d", idx_byte);
     DEBUG("idx_block: %d", idx_block);
 
-    // Lee el bloque donde se encuentra el bit asociado al nbloque, usando la posición absoluta
+    // lee el bloque donde se encuentra el bit asociado al nbloque, usando la posición absoluta
     if (bread(idx_block, block_buff) == FALLO) return FALLO;
 
     unsigned char mask = 1 << (7 - pos_bit);
-    DEBUG("MASK value: %2$s (0x%1$02x, %1$hhu)", mask, BIN_STR8(mask));
-    DEBUG("prev value: %2$s (0x%1$02x, %1$hhu)", block_buff[idx_byte], BIN_STR8(block_buff[idx_byte]));
-    if (bit) block_buff[idx_byte] |= mask; // Si el valor pasado por parámetro es 1, hace una OR entre el byte del MB y la máscara
-    else block_buff[idx_byte] &= ~mask;    // Si es 0, hace una AND entre el byte del MB y la máscara negada
-    DEBUG("new  value: %2$s (0x%1$02x, %1$hhu)", block_buff[idx_byte], BIN_STR8(block_buff[idx_byte]));
+    DEBUG("mask value: %2$s (0x%1$02x, %1$3hhu)", mask, BIN_STR8(mask));
+    DEBUG("prev value: %2$s (0x%1$02x, %1$3hhu)", block_buff[idx_byte], BIN_STR8(block_buff[idx_byte]));
+    if (bit) block_buff[idx_byte] |= mask; // si el valor pasado por parámetro es 1, hace una OR entre el byte del MB y la máscara
+    else block_buff[idx_byte] &= ~mask;    // si es 0, hace una AND entre el byte del MB y la máscara negada
+    DEBUG(" new value: %2$s (0x%1$02x, %1$3hhu)", block_buff[idx_byte], BIN_STR8(block_buff[idx_byte]));
 
-    if (bwrite(idx_block, block_buff) == FALLO) return FALLO; // Escribe el bloque del MB modificado en el dispositivo virtual
+    if (bwrite(idx_block, block_buff) == FALLO) return FALLO; // escribe el bloque del MB modificado en el dispositivo virtual
 
     return EXITO;
 }
@@ -173,23 +173,24 @@ int escribir_bit(unsigned int nbloque, unsigned int bit) {
 int leer_bit(unsigned int nbloque) {
     if (bread(posSB, &sb) == FALLO) return FALLO; // Lee el superbloque del dispositivo virtual
 
-    unsigned int pos_byte = nbloque / 8;                                  // Byte dentro del MB que contiene el bit asociado al nbloque
-    unsigned int pos_bit = nbloque % 8;                                   // Bit del Byte anterior que contiene el bit asociado al nbloque
-    unsigned int idx_byte = pos_byte % BLOCKSIZE;                         // Núm. de bloque dentro del MB donde se encuentra el Byte anterior
+    unsigned int pos_byte = nbloque / 8;                                  // byte dentro del MB que contiene el bit asociado al nbloque
+    unsigned int pos_bit = nbloque % 8;                                   // bit del Byte anterior que contiene el bit asociado al nbloque
+    unsigned int idx_byte = pos_byte % BLOCKSIZE;                         // núm. de bloque dentro del MB donde se encuentra el Byte anterior
     unsigned int idx_block = sb.posPrimerBloqueMB + pos_byte / BLOCKSIZE; // numBloqueAbs, Núm. de bloque absoluto
 
-    DEBUG("pos_byte: %d", pos_byte);
-    DEBUG("pos_bit: %d", pos_bit);
-    DEBUG("idx_byte: %d", idx_byte);
-    DEBUG("idx_block: %d", idx_block);
+    DEBUG("pos_byte: %u", pos_byte);
+    DEBUG("pos_bit: %u", pos_bit);
+    DEBUG("idx_byte: %u", idx_byte);
+    DEBUG("idx_block: %u", idx_block);
 
-    // Lee el bloque que contiene el bit que nos interesa a partir de la posición absoluta calculada
+    // lee el bloque que contiene el bit que nos interesa a partir de la posición absoluta calculada
     if (bread(idx_block, block_buff) == FALLO) return FALLO;
     unsigned char mask = 1 << (7 - pos_bit);
-    DEBUG("value: %2$s (0x%1$02x, %1$hhu)", block_buff[idx_byte], BIN_STR8(block_buff[idx_byte]));
-    DEBUG("MASK:  %2$s (0x%1$02x, %1$hhu)", mask, BIN_STR8(mask));
-    DEBUG("bit value = %d", ((block_buff[idx_byte] & mask)>>(7 - pos_bit)));
-    return ((block_buff[idx_byte] & mask)>>(7 - pos_bit)); // Devuelve el valor del bit solicitado
+    DEBUG(" pre value: %2$s (0x%1$02x, %1$3hhu)", block_buff[idx_byte], BIN_STR8(block_buff[idx_byte]));
+    DEBUG("      mask: %2$s (0x%1$02x, %1$3hhu)", mask, BIN_STR8(mask));
+    int value = ((block_buff[idx_byte] & mask) >> (7 - pos_bit));
+    DEBUG("post value: %2$s (0x%1$02x, %1$3hhu)", value, BIN_STR8(value));
+    return value;
 }
 
 /**
@@ -198,10 +199,10 @@ int leer_bit(unsigned int nbloque) {
  * @return número de bloque reservado, FALLO en caso de error
  */
 int reservar_bloque() {
-    if (bread(posSB, &sb) == FALLO) return FALLO; // Lee el superbloque del dispositivo virtual
-    if (sb.cantBloquesLibres == 0) return FALLO; // Comprueba que haya bloques libres para poder realizar la reserva
+    if (bread(posSB, &sb) == FALLO) return FALLO; // lee el superbloque del dispositivo virtual
+    if (sb.cantBloquesLibres == 0) return FALLO; // comprueba que haya bloques libres para poder realizar la reserva
 
-    unsigned char bufferAux[BLOCKSIZE] = {}; // Declaramos un buffer auxiliar,
+    unsigned char bufferAux[BLOCKSIZE] = {}; // declaramos un buffer auxiliar,
     memset(bufferAux, 0xff, BLOCKSIZE);      // posteriormente lo inicializamos con todos sus bits a 1
     unsigned int block_cnt_mb = sb.posUltimoBloqueMB - sb.posPrimerBloqueMB; // Tamaño en bloques del Mapa de Bits, restringe el bucle for
     unsigned int nblock_mb = 0;
@@ -209,39 +210,38 @@ int reservar_bloque() {
     DEBUG("sb.posUltimoBloqueMB: %u", sb.posUltimoBloqueMB);
     DEBUG("block_cnt_mb: %u", block_cnt_mb);
     for (; nblock_mb < block_cnt_mb; nblock_mb++) {
-        if (bread(sb.posPrimerBloqueMB + nblock_mb, block_buff) == FALLO) return FALLO; // Lee el bloque actual
-        if (memcmp(block_buff, bufferAux, BLOCKSIZE)) break; // Se compara el bloque actual con el buffer auxiliar cuyo contenido son todo 1's,
+        if (bread(sb.posPrimerBloqueMB + nblock_mb, block_buff) == FALLO) return FALLO; // lee el bloque actual
+        if (memcmp(block_buff, bufferAux, BLOCKSIZE)) break; // se compara el bloque actual con el buffer auxiliar cuyo contenido son todo 1's,
     }                                                        // sale del bucle si se encuentra algún bit a 0 en el bloque actual
 
     DEBUG("nblock_mb: %u", nblock_mb);
 
-    // Obtiene la posición del primer byte del bloque que tiene algún bit a 0
+    // obtiene la posición del primer byte del bloque que tiene algún bit a 0
     unsigned int nbyte = 0;
     while (nbyte < BLOCKSIZE && block_buff[nbyte] == 0xff) nbyte++;
     DEBUG("nbyte: %u", nbyte);
 
-    // Obtiene la posición del primer bit que está a 0 dentro del byte seleccionado anteriormente
+    // obtiene la posición del primer bit que está a 0 dentro del byte seleccionado anteriormente
     unsigned char nbit = 0;
     unsigned char val = block_buff[nbyte]; 
-    // unsigned char val = 0xf0;
-    DEBUG("[%1$d]val: %2$s (0x%3$02x, %3$hhu, initial byte value)", nbit,  BIN_STR8(val), val);
+    DEBUG("[%1$d]val: %2$s (0x%3$02x, %3$3hhu, initial byte value)", nbit, BIN_STR8(val), val);
 
-    while (val & 0x80) { // Comprueba el valor del MSB del Byte seleccionado
-        val <<= 1; // Si el MSB no es 0, desplaza una posición hacia la izquierda
+    while (val & 0x80) { // comprueba el valor del MSB del Byte seleccionado
+        val <<= 1; // si el MSB no es 0, desplaza una posición hacia la izquierda
         nbit++;
-        DEBUG("[%1$d]val: %2$s (0x%3$02x, %3$hhu)", nbit,  BIN_STR8(val), val);
+        DEBUG("[%1$d]val: %2$s (0x%3$02x, %3$3hhu)", nbit,  BIN_STR8(val), val);
     }
     DEBUG("[nbit]: %u  (núm. desplazamientos)", nbit);
 
-    // Modifica la zona de metadatos para que el bloque quede reservado
+    // modifica la zona de metadatos para que el bloque quede reservado
     unsigned int nblock = (nblock_mb * BLOCKSIZE + nbyte) * 8 + nbit;
     DEBUG("nblock: %u", nblock);
-    if (escribir_bit(nblock, 1) == FALLO) return FALLO; // Pone como ocupado el bit del MB asociado al bloque reservado
+    if (escribir_bit(nblock, 1) == FALLO) return FALLO; // pone como ocupado el bit del MB asociado al bloque reservado
     sb.cantBloquesLibres--;
     DEBUG("sb.cantBloquesLibres: %u", sb.cantBloquesLibres);
-    if (bwrite(posSB, &sb) == FALLO) return FALLO; // Escribe los cambios en el dispositivo virtual
+    if (bwrite(posSB, &sb) == FALLO) return FALLO; // escribe los cambios en el dispositivo virtual
 
-    // Limpia la zona de datos correspondiente al bloque reservado
+    // limpia la zona de datos correspondiente al bloque reservado
     memset(bufferAux, 0, BLOCKSIZE);
     if (bwrite(nblock, bufferAux) == FALLO) return FALLO;
 
@@ -273,16 +273,16 @@ int liberar_bloque(unsigned int nbloque) {
 int escribir_inodo(unsigned int ninodo, inodo_t *inodo) {
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
-    unsigned int nblock = sb.posPrimerBloqueAI + ninodo / INODOS_IN_BLOCK; // Número de bloque en el que se encuentra el inodo
-    unsigned int inodo_idx = ninodo % INODOS_IN_BLOCK; // Índice del inodo dentro del bloque
+    unsigned int nblock = sb.posPrimerBloqueAI + ninodo / INODOS_IN_BLOCK; // número de bloque en el que se encuentra el inodo
+    unsigned int inodo_idx = ninodo % INODOS_IN_BLOCK; // índice del inodo dentro del bloque
 
     DEBUG("nblock: %u", nblock);
     DEBUG("inodo_idx: %u", inodo_idx);
     DEBUG("inodo block%u[%u]", nblock, inodo_idx);
 
-    if (bread(nblock, inodos) == FALLO) return FALLO;  // Lee el bloque en donde se encuentra el array con el inodo a sobreescribir
-    inodos[inodo_idx] = *inodo;                        // Sobreescribe el inodo del array con el inodo pasado por parámetro
-    if (bwrite(nblock, inodos) == FALLO) return FALLO; // Vuelve a escribir el bloque en el dispositivo virtual
+    if (bread(nblock, inodos) == FALLO) return FALLO;  // lee el bloque en donde se encuentra el array con el inodo a sobreescribir
+    inodos[inodo_idx] = *inodo;                        // sobreescribe el inodo del array con el inodo pasado por parámetro
+    if (bwrite(nblock, inodos) == FALLO) return FALLO; // vuelve a escribir el bloque en el dispositivo virtual
 
     return EXITO;
 }
@@ -297,15 +297,15 @@ int escribir_inodo(unsigned int ninodo, inodo_t *inodo) {
 int leer_inodo(unsigned int ninodo, inodo_t *inodo) {
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
-    unsigned int nblock = sb.posPrimerBloqueAI + ninodo / INODOS_IN_BLOCK; // Número de bloque en el que se encuentra el inodo
-    unsigned int inodo_idx = ninodo % INODOS_IN_BLOCK; // Índice del inodo dentro del bloque
+    unsigned int nblock = sb.posPrimerBloqueAI + ninodo / INODOS_IN_BLOCK; // número de bloque en el que se encuentra el inodo
+    unsigned int inodo_idx = ninodo % INODOS_IN_BLOCK; // índice del inodo dentro del bloque
 
     DEBUG("nblock: %u", nblock);
     DEBUG("inodo_idx: %u", inodo_idx);
     DEBUG("inodo block%u[%u]", nblock, inodo_idx);
 
-    if (bread(nblock, inodos) == FALLO) return FALLO; // Lee el bloque en donde se encuentra el inodo que queremos leer
-    *inodo = inodos[inodo_idx]; // Pone en la dirección de memoria pasada por parámetro el struct del inodo leído
+    if (bread(nblock, inodos) == FALLO) return FALLO; // lee el bloque en donde se encuentra el inodo que queremos leer
+    *inodo = inodos[inodo_idx]; // pone en la dirección de memoria pasada por parámetro el struct del inodo leído
 
     return EXITO;
 }
@@ -318,18 +318,19 @@ int leer_inodo(unsigned int ninodo, inodo_t *inodo) {
  * @return posición del inodo reservado en el array de inodos, FALLO si no hay inodos libres o si ha habido un error
  */
 int reservar_inodo(unsigned char tipo, unsigned char permisos) {
-    if (bread(posSB, &sb) == FALLO) return FALLO; // Lee el superbloque del dispositivo virtual
+    if (bread(posSB, &sb) == FALLO) return FALLO;
 
-    if (sb.cantInodosLibres == 0) { // Comprueba que haya inodos libres 
+    if (sb.cantInodosLibres == 0) {
         ERROR("no hay inodos libres");
         return FALLO;
     }
-    DEBUG("(PRE) sb.cantInodosLibres: %u", sb.cantInodosLibres);
-    DEBUG("(PRE) sb.posPrimerInodoLibre: %u", sb.posPrimerInodoLibre);
+
+    DEBUG("[pre] sb.cantInodosLibres: %u", sb.cantInodosLibres);
+    DEBUG("[pre] sb.posPrimerInodoLibre: %u", sb.posPrimerInodoLibre);
 
     inodo_t inodo = {};
     unsigned int inodo_pos = sb.posPrimerInodoLibre;
-    if (leer_inodo(inodo_pos, &inodo) == FALLO) return FALLO; // Lee el inodo libre a partir de la posición indicada por el superbloque
+    if (leer_inodo(inodo_pos, &inodo) == FALLO) return FALLO; // lee el inodo libre a partir de la posición indicada por el superbloque
     inodo.tipo = tipo;
     inodo.permisos = permisos;
     inodo.nlinks = 1;
@@ -341,18 +342,18 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos) {
     inodo.btime = t;
     inodo.numBloquesOcupados = 0;
 
-    // Actualiza el superbloque antes de resetear los punteros del inodo
-    sb.posPrimerInodoLibre = inodo.punterosDirectos[0]; // Actualiza la lista enlazada de inodos libres
+    // actualiza el superbloque antes de resetear los punteros del inodo
+    sb.posPrimerInodoLibre = inodo.punterosDirectos[0]; // actualiza la lista enlazada de inodos libres
     sb.cantInodosLibres--;                              // y decrementa el contador de inodos libres
     if (bwrite(posSB, &sb) == FALLO) return FALLO;
 
-    // Resetea los arrays de punteros del inodo reservado y los escribe en el dispositivo virtual
+    // resetea los arrays de punteros del inodo reservado y los escribe en el dispositivo virtual
     memset(inodo.punterosDirectos, 0, 12*sizeof(unsigned int));
     memset(inodo.punterosIndirectos, 0, 3*sizeof(unsigned int));
     if (escribir_inodo(inodo_pos, &inodo) == FALLO) return FALLO; 
 
-    DEBUG("(POST) sb.cantInodosLibres: %u", sb.cantInodosLibres);
-    DEBUG("(POST) sb.posPrimerInodoLibre: %u", sb.posPrimerInodoLibre);
+    DEBUG("[post] sb.cantInodosLibres: %u", sb.cantInodosLibres);
+    DEBUG("[post] sb.posPrimerInodoLibre: %u", sb.posPrimerInodoLibre);
 
     return inodo_pos;
 }

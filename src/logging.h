@@ -27,14 +27,15 @@
 #endif
 
 #define ERROR(...) { fprintf(stderr, RED "error: " RESET); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }
-// Macro que formatea y simplifica la impresión de errno
+// macro que formatea y simplifica la impresión de errno
 #define ERRSYS(name) { fprintf(stderr, BOLD RED "%s→" name "(): " RESET RED "%s\n" RESET,  __func__, strerror(errno)); }
 
-// Devuelve un string con el valor binario de n, se usa en los mensajes de debug para imprimir un número en formato binario
+// devuelve un string con el valor binario de n, se usa en los mensajes de debug para imprimir un número en formato binario
 #define BIN_STR8(n) ({ \
     unsigned char num = (n) & 0xFF; \
     char binario[9] = "\0"; \
     for (int i = 0; i < 8; i++) binario[i] = (num & (1 << (7 - i))) ? '1' : '0'; \
     binario;\
 })
+
 #endif
