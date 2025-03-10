@@ -1,6 +1,6 @@
 /**************************************************************************
 * FILENAME: logging.h
-* DESCRIPTION: Contiene la definición de múltiples MACROs, estas se 
+* DESCRIPTION: Contiene la definición de múltiples macros, estas se 
                utilizan para la impresión de los mensajes de DEBUG
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/

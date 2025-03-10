@@ -46,56 +46,96 @@ int main(int argc, char **argv) {
     // }
     // printf("\n");
 
-    printf("RESERVAMOS UN BLOQUE Y LUEGO LO LIBERAMOS\n");
-    int nblock = reservar_bloque();
-    bread(posSB, &sb);
-    printf("Se ha reservado el bloque físico nº %d que era el 1º libre indicado por el MB\n", nblock);
-    printf("SB.cantBloquesLibres: %u\n", sb.cantBloquesLibres);
-    liberar_bloque(nblock);
-    bread(posSB, &sb);
-    printf("Liberamos ese bloque y después SB.cantBloquesLibres = %u\n", sb.cantBloquesLibres);
-    printf("\n");
+    // printf("RESERVAMOS UN BLOQUE Y LUEGO LO LIBERAMOS\n");
+    // int nblock = reservar_bloque();
+    // bread(posSB, &sb);
+    // printf("Se ha reservado el bloque físico nº %d que era el 1º libre indicado por el MB\n", nblock);
+    // printf("SB.cantBloquesLibres: %u\n", sb.cantBloquesLibres);
+    // liberar_bloque(nblock);
+    // bread(posSB, &sb);
+    // printf("Liberamos ese bloque y después SB.cantBloquesLibres = %u\n", sb.cantBloquesLibres);
+    // printf("\n");
 
-    printf("MAPA DE BITS CON BLOQUES DE METADATOS OCUPADOS\n");
-    printf("posSB: %u → leer_bit(%u) = %u\n", posSB, posSB, leer_bit(posSB));
-    printf("SB.posPrimerBloqueMB: %u → leer_bit(%u) = %u\n", sb.posPrimerBloqueMB, sb.posPrimerBloqueMB, leer_bit(sb.posPrimerBloqueMB));
-    printf("SB.posUltimoBloqueMB: %u → leer_bit(%u) = %u\n", sb.posUltimoBloqueMB, sb.posUltimoBloqueMB, leer_bit(sb.posUltimoBloqueMB));
-    printf("SB.posPrimerBloqueAI: %u → leer_bit(%u) = %u\n", sb.posPrimerBloqueAI, sb.posPrimerBloqueAI, leer_bit(sb.posPrimerBloqueAI));
-    printf("SB.posUltimoBloqueAI: %u → leer_bit(%u) = %u\n", sb.posUltimoBloqueAI, sb.posUltimoBloqueAI, leer_bit(sb.posUltimoBloqueAI));
-    printf("SB.posPrimerBloqueDatos: %u → leer_bit(%u) = %u\n", sb.posPrimerBloqueDatos, sb.posPrimerBloqueDatos, leer_bit(sb.posPrimerBloqueDatos));
-    printf("SB.posUltimoBloqueDatos: %u → leer_bit(%u) = %u\n", sb.posUltimoBloqueDatos, sb.posUltimoBloqueDatos, leer_bit(sb.posUltimoBloqueDatos));
-    printf("\n");
+    // printf("MAPA DE BITS CON BLOQUES DE METADATOS OCUPADOS\n");
+    // printf("posSB: %u → leer_bit(%u) = %u\n", posSB, posSB, leer_bit(posSB));
+    // printf("SB.posPrimerBloqueMB: %u → leer_bit(%u) = %u\n", sb.posPrimerBloqueMB, sb.posPrimerBloqueMB, leer_bit(sb.posPrimerBloqueMB));
+    // printf("SB.posUltimoBloqueMB: %u → leer_bit(%u) = %u\n", sb.posUltimoBloqueMB, sb.posUltimoBloqueMB, leer_bit(sb.posUltimoBloqueMB));
+    // printf("SB.posPrimerBloqueAI: %u → leer_bit(%u) = %u\n", sb.posPrimerBloqueAI, sb.posPrimerBloqueAI, leer_bit(sb.posPrimerBloqueAI));
+    // printf("SB.posUltimoBloqueAI: %u → leer_bit(%u) = %u\n", sb.posUltimoBloqueAI, sb.posUltimoBloqueAI, leer_bit(sb.posUltimoBloqueAI));
+    // printf("SB.posPrimerBloqueDatos: %u → leer_bit(%u) = %u\n", sb.posPrimerBloqueDatos, sb.posPrimerBloqueDatos, leer_bit(sb.posPrimerBloqueDatos));
+    // printf("SB.posUltimoBloqueDatos: %u → leer_bit(%u) = %u\n", sb.posUltimoBloqueDatos, sb.posUltimoBloqueDatos, leer_bit(sb.posUltimoBloqueDatos));
+    // printf("\n");
 
+    // inodo_t inodo = {};
+    // leer_inodo(sb.posInodoRaiz, &inodo);
+    // printf("DATOS DEL DIRECTORIO RAIZ\n");
+    // printf("tipo: %c\n", inodo.tipo);
+    // printf("permisos: %hhu\n", inodo.permisos);
+    //
+    // char time_str[32] = {};
+    // struct tm *ts;
+    //
+    // ts = localtime(&inodo.atime);
+    // strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+    // printf("atime: %s\n", time_str);
+    //
+    // ts = localtime(&inodo.mtime);
+    // strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+    // printf("mtime: %s\n", time_str);
+    //
+    // ts = localtime(&inodo.ctime);
+    // strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+    // printf("ctime: %s\n", time_str);
+    //
+    // ts = localtime(&inodo.btime);
+    // strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+    // printf("btime: %s\n", time_str);
+    //
+    // strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+    // printf("nlinks: %u\n", inodo.nlinks);
+    // printf("tamEnBytesLog: %u\n", inodo.tamEnBytesLog);
+    // printf("numBloquesOcupados: %u\n", inodo.numBloquesOcupados);
 
-    inodo_t inodo = {};
-    leer_inodo(sb.posInodoRaiz, &inodo);
-    printf("DATOS DEL DIRECTORIO RAIZ\n");
-    printf("tipo: %c\n", inodo.tipo);
-    printf("permisos: %hhu\n", inodo.permisos);
+    printf("INODO 1. TRADUCCION DE LOS BLOQUES LOGICOS 8, 204, 30.004, 400.004 y 468.750\n\n");
+    unsigned int blocks[] = { 8, 204, 30004, 400004, 468750 };
+    int ninode = reservar_inodo('f', 06);
+    for (unsigned int i = 0; i < sizeof(blocks) / sizeof(*blocks); i++) {
+        traducir_bloque_inodo(ninode, blocks[i], 1);
+        printf("\n");
+    }
+
+    inodo_t inode = {};
+    leer_inodo(ninode, &inode);
+    printf("DATOS DEL INODO RESERVADO 1\n");
+    printf("tipo: %c\n", inode.tipo);
+    printf("permisos: %hhu\n", inode.permisos);
 
     char time_str[32] = {};
     struct tm *ts;
 
-    ts = localtime(&inodo.atime);
+    ts = localtime(&inode.atime);
     strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
     printf("atime: %s\n", time_str);
 
-    ts = localtime(&inodo.mtime);
+    ts = localtime(&inode.mtime);
     strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
     printf("mtime: %s\n", time_str);
 
-    ts = localtime(&inodo.ctime);
+    ts = localtime(&inode.ctime);
     strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
     printf("ctime: %s\n", time_str);
 
-    ts = localtime(&inodo.btime);
+    ts = localtime(&inode.btime);
     strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
     printf("btime: %s\n", time_str);
 
     strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
-    printf("nlinks: %u\n", inodo.nlinks);
-    printf("tamEnBytesLog: %u\n", inodo.tamEnBytesLog);
-    printf("numBloquesOcupados: %u\n", inodo.numBloquesOcupados);
+    printf("nlinks: %u\n", inode.nlinks);
+    printf("tamEnBytesLog: %u\n", inode.tamEnBytesLog);
+    printf("numBloquesOcupados: %u\n", inode.numBloquesOcupados);
+
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+    printf("sb.posPrimerInodoLibre: %u\n", sb.posPrimerInodoLibre);
 
     if (bumount() == FALLO) {
         fprintf(stderr, "error al desmontar el dispositivo virtual %s\n", nombre_dispositivo);
