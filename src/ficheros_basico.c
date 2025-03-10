@@ -367,18 +367,18 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos) {
  * @param ptr puntero a la variable que se va a actualizar con el valor del puntero correspondiente
  * @return 0 si nblogico esta en los punteros directos, 1 si esta en punteros indirectos 0, 2 si esta en punteros indirectos 1, 3 si esta dentro de punteros indirectos 2 y -1 si esta fuera de rango
  */
-int obtener_nRangoBL(inodo_t *inodo, unsigned int nblogico, unsigned int **ptr) {
+int obtener_nRangoBL(inodo_t *inodo, unsigned int nblogico, unsigned int *ptr) {
     if (nblogico < DIRECTOS) {
-        *ptr = inodo->punterosDirectos;
+        *ptr = inodo->punterosDirectos[nblogico];
         return 0;
     } else if (nblogico < INDIRECTOS0) {
-        *ptr = inodo->punterosIndirectos;
+        *ptr = inodo->punterosIndirectos[0];
         return 1;
     } else if (nblogico < INDIRECTOS1) {
-        *ptr = inodo->punterosIndirectos;
+        *ptr = inodo->punterosIndirectos[1];
         return 2;
     } else if (nblogico < INDIRECTOS2) {
-        *ptr = inodo->punterosIndirectos;
+        *ptr = inodo->punterosIndirectos[2];
         return 3;
     }
     *ptr = 0;
@@ -413,56 +413,108 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros) {
     return FALLO;
 }
 
+/**
+ *  Función que retorna la dirección física de un bloque dentro del disco a partir de un número de bloque lógico y un número de inodo del array de inodos,
+ *  La función realiza la búsqueda del bloque lógico dentro del sistema de arrays anidados y dispone de dos modos controlados por el valor reservar, 
+ *  pasado por parámetro, estos funcionan de la siguiente manera:
+ *  Si reservar == 0, la función busca el bloque lógico en el array, si no lo encuentra devuelve -1
+ *  Si reservar == 1, la función busca el bloque lógico en el array, si no lo encuentra, realiza una reserva de un bloque en el disco
+ * 
+ * @param ninodo número de inodo en el array de inodos
+ * @param nblogico número de bloque lógico sobre el que queremos conocer su dirección física dentro del disco (núm. bloque físico)
+ * @param reservar flag que permite seleccionar el modo de operación
+ * @return puntero a la dirección del bloque físico buscado si correcto, FALLO (-1) si ha habido un error o no se ha encontrado el bloque (cuando reservar = 0)
+ */
 int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned char reservar) {
-    inodo_t inode = {};
-    if (leer_inodo(ninodo, &inode) == FALLO) return FALLO;
+    unsigned int ptr = 0, ptr_ant = 0, salvar_inodo = 0;
+    int indice = 0;
+    unsigned int buffer[NPUNTEROS];
+    inodo_t inodo = {};
 
-    unsigned int *ptr = 0; // puntero al array de punteros correspondiente al bloque logico del inodo
-    int depth = obtener_nRangoBL(&inode, nblogico, &ptr);
-    if (depth < 0) return FALLO;
-    int idx = depth == 0 ? obtener_indice(nblogico, depth) : depth-1;
-    if (idx == FALLO) return FALLO;
+    if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO; // Lee el en el array de inodos, el inodo cuyo número se ha pasado por parámetro (ninodo)
 
-    unsigned int nblock = ptr[idx];
-    unsigned int buff[NPUNTEROS] = {};
+    // Devuelve el rango en donde se encuentra el num de bloque lógico indicado (nblogico), en caso de ser directo el puntero apunta a la posición nblogico
+    int nRangoBL = obtener_nRangoBL(&inodo, nblogico, &ptr); 
 
-    if (nblock == 0) {
-        if (!reservar) return FALLO;
+    // nRangoBL=0 para bloques lógicos [0 , 11],                    Array de punteros Directos
+    // nRangoBL=1 para bloques lógicos [12 , 267],                  indirectos[0]
+    // nRangoBL=2 para bloques lógicos [268 , 65.803],              indirectos[1]
+    // nRangoBL=3 para bloques lógicos [65.804 , 16.843.019],       indirectos[2]
 
-        ptr[idx] = reservar_bloque();
-        nblock = ptr[idx];
-        printf("reserved block: %u\n", ptr[idx]);
+    //el nivel_punteros +alto es el que cuelga directamente del inodo
+    int nivel_punteros = nRangoBL;
+    if (nivel_punteros < 0) return FALLO;
 
-        inode.numBloquesOcupados++;
-        inode.ctime = time(NULL);
-        if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
+    while (nivel_punteros > 0) { // iterar para cada nivel de punteros indirectos // Si los punteros son indirectos (0 = directos, 1-2-3 = indirectos)
+        // indirectos[] es un array de 3 elementos [INDIRECTOS0, INDIRECTOS1, INDIRECTOS2], 
+        // cada uno es la dirección a un bloque de punteros 
+        // (luego a su vez, algunos de esos bloques apuntan a más bloques de punteros, haciendo recursividad)
 
-        memset(buff, 0, sizeof(buff));
-        if (bwrite(nblock, buff) == FALLO) return FALLO;
+        if (ptr == 0) { // no cuelgan bloques de punteros, es decir 
+                       // - el puntero de indirectos[0,1 o 2] no está declarado, no apunta a ningún sitio
+                       // - el array del nivel en el que esté, no apunta a ningún sitio, 
+                       //   es decir no permite seguir la ruta teórica que permitiría llegar al bloque buscado
+
+            if (reservar == 0) return -1; // Si no se pretende reservar ningún bloque, finaliza la ejecución ya que no hay nada que devolver
+
+            // reserva el bloque de punteros, la función devuelve el puntero con el que posteriormente 
+            // se hará la inicialización de alguno de los 3 elementos del array de indirectos[0,1 o 2] 
+            // que no haya sido declarado previamente
+            if ((ptr = reservar_bloque()) == FALLO) return FALLO;
+
+            // Se actualiza el num de bloques ocupados por el inodo en el campo de datos del disco
+            // y se pone la fecha actual como fecha de última modificación del inodo
+            inodo.numBloquesOcupados++;
+            inodo.ctime = time(NULL); //time_t t = time(NULL);
+            salvar_inodo = 1; // Es un flag para marcar que se han realizado cambios en el inodo y que estos deben sobreescribirse en el disco
+
+            if (nivel_punteros == nRangoBL) { // el bloque cuelga directamente del inodo, es decir, estamos en la primera iteración
+                // pone el bloque de punteros reservado en el array de indirectos
+                // P.EJ.: según obtener_rango -> indirectos[0] tiene rango 1,
+                // por tanto para escribir el ptr en indirectos[0] se debe poner indirectos[nRangoBL-1]
+                inodo.punterosIndirectos[nRangoBL-1] = ptr; 
+                DEBUG("inodo.punterosIndirectos[%1$d] = %2$u (reservado BF %2$u para punteros_nivel%3$d)", nRangoBL-1, ptr, nivel_punteros);
+            } else { //el bloque cuelga de otro bloque de punteros
+                buffer[indice] = ptr;
+                if (bwrite(ptr_ant, buffer) == FALLO) return FALLO; // salvamos en el dispositivo el buffer de punteros modificado, 
+                                                                    // es decir el array anterior, en el que se ha añadido
+                                                                    // una dirección nueva al reservar un bloque  
+                DEBUG("punteros_nivel%1$d [%2$d] = %3$u (reservado BF %3$u para punteros_nivel%4$d)", nivel_punteros+1, indice, ptr, nivel_punteros);
+            }
+            memset(buffer, 0, BLOCKSIZE); // ponemos a 0 todos los punteros del buffer
+        } else {
+            if (bread(ptr, buffer) == FALLO) return FALLO; // leemos del dispositivo el bloque de punteros ya existente
+        }
+
+        // P.ej.: en Indirectos2, que hay 3 niveles de recursividad, la función obtener_indice funciona de la siguiente manera:
+        // Si nivel_punteros == 3 obtener_indice devuelve indice pertinente (para ir hacia el nbloque buscado) del array de punteros que cuelga del inodo (Nivel3)
+        // si nivel_punteros == 2 obtener_indice devuelve el indice del array que cuelga del anterior array
+        // si nivel_punteros == 1 obtener_indice devuelve el indice del array donde finalmente se encuentran los punteros a los datos buscados
+
+        if ((indice = obtener_indice(nblogico, nivel_punteros)) == FALLO) return FALLO; // Devuelve el índice dentro del array donde se encuentra el bloque buscado
+        ptr_ant = ptr; // Guarda la dirección del array donde se ha reservado el bloque en una de sus entradas, para despues actualizarlo en el disco
+        ptr = buffer[indice]; // actualiza el puntero, copia la dirección que almacena el array de punteros actual en el indice concreto
+                              // es decir se prepara para la siguiente iteración saber en que dirección leer, habiendo profundizado una capa más
+        nivel_punteros--; // Decrementa el nivel, es decir va más adentro, profundiza en la recursividad
     }
 
-    for (unsigned int lvl = depth; lvl > 0; lvl--) {
-        if (bread(nblock, buff) == FALLO) return FALLO;
-        if ((idx = obtener_indice(nblogico, lvl)) == FALLO) return FALLO;
+    if (ptr == 0) { //no existe bloque de datos
+        if (reservar == 0) return -1;
+        if ((ptr = reservar_bloque()) == FALLO) return FALLO; // de datos
+        inodo.numBloquesOcupados++;
+        inodo.ctime = time(NULL);
+        salvar_inodo = 1;
 
-        if (buff[idx] == 0) {
-            if (!reservar) return FALLO;
-
-            buff[idx] = reservar_bloque();
-            if (bwrite(nblock, buff) == FALLO) return FALLO;
-            printf("reserved block: %u\n", buff[idx]);
-
-            inode.numBloquesOcupados++;
-            inode.ctime = time(NULL);
-            if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
-
-            nblock = buff[idx];
-            memset(buff, 0, sizeof(buff));
-            if (bwrite(nblock, buff) == FALLO) return FALLO;
+        if (nRangoBL == 0) { // si era un puntero Directo
+            inodo.punterosDirectos[nblogico] = ptr; // asignamos la direción del bl. de datos en el inodo
+            DEBUG("inodo.punterosDirectos[%1$u] = %2$u (reservado BF %2$u para BL %1$u)]", nblogico, ptr);
         } else {
-            nblock = buff[idx];
+            buffer[indice] = ptr; // asignamos la dirección del bloque de datos en el buffer
+            if (bwrite(ptr_ant, buffer) == FALLO) return FALLO; // salvamos en el dispositivo el buffer de punteros modificado 
+            DEBUG("punteros_nivel%1$d [%2$d] = %3$u (reservado BF %3$u para BL %4$u)", nivel_punteros+1, indice, ptr, nblogico);
         }
     }
 
-    return nblock;
+    if (salvar_inodo && (escribir_inodo(ninodo, &inodo)) == FALLO) return FALLO;
+    return ptr; // Devuelve la dirección del bloque de datos buscado
 }

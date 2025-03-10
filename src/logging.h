@@ -1,22 +1,12 @@
 /**************************************************************************
 * FILENAME: logging.h
-* DESCRIPTION: Contiene la definición de múltiples MACROs, estas se 
+* DESCRIPTION: Contiene la definición de múltiples macros, estas se 
                utilizan para la impresión de los mensajes de DEBUG
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
 #ifndef __LOGGING_H__
 #define __LOGGING_H__
-
-// #define DEBUG_LVL  0
-//
-// #define DEBUG(lvl, ...) { \
-//     if (DEBUG_LVL >= (lvl)) { \
-//         fprintf(stderr, GRAY "%s\t%s\t%d: " RESET, __FILE__, __func__, __LINE__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); \
-//         fprintf(stderr, __VA_ARGS__); \
-//         fprintf(stderr, "\n"); \
-//     } \
-// }
 
 #ifndef DEBUG_EN
 #define DEBUG_EN 0
