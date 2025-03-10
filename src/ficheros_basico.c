@@ -412,7 +412,6 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros) {
     return FALLO;
 }
 
-
 /**
  *  Función que retorna la dirección física de un bloque dentro del disco a partir de un número de bloque lógico y un número de inodo del array de inodos,
  *  La función realiza la búsqueda del bloque lógico dentro del sistema de arrays anidados y dispone de dos modos controlados por el valor reservar, 
@@ -432,37 +431,35 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
     inodo_t inodo = {};
 
     if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO; // Lee el en el array de inodos, el inodo cuyo número se ha pasado por parámetro (ninodo)
-    
+
     // Devuelve el rango en donde se encuentra el num de bloque lógico indicado (nblogico), en caso de ser directo el puntero apunta a la posición nblogico
     int nRangoBL = obtener_nRangoBL(&inodo, nblogico, &ptr); 
-    
+
     // nRangoBL=0 para bloques lógicos [0 , 11],                    Array de punteros Directos
     // nRangoBL=1 para bloques lógicos [12 , 267],                  indirectos[0]
     // nRangoBL=2 para bloques lógicos [268 , 65.803],              indirectos[1]
     // nRangoBL=3 para bloques lógicos [65.804 , 16.843.019],       indirectos[2]
 
     //el nivel_punteros +alto es el que cuelga directamente del inodo
-    int nivel_punteros = nRangoBL; 
+    int nivel_punteros = nRangoBL;
+    if (nivel_punteros < 0) return FALLO;
 
-    if(nivel_punteros < 0) return FALLO;
-
-    while(nivel_punteros > 0) { //iterar para cada nivel de punteros indirectos // Si los punteros son indirectos (0 = directos, 1-2-3 = indirectos)
-
+    while (nivel_punteros > 0) { // iterar para cada nivel de punteros indirectos // Si los punteros son indirectos (0 = directos, 1-2-3 = indirectos)
         // indirectos[] es un array de 3 elementos [INDIRECTOS0, INDIRECTOS1, INDIRECTOS2], 
         // cada uno es la dirección a un bloque de punteros 
         // (luego a su vez, algunos de esos bloques apuntan a más bloques de punteros, haciendo recursividad)
 
-        if(ptr == 0) { // no cuelgan bloques de punteros, es decir 
+        if (ptr == 0) { // no cuelgan bloques de punteros, es decir 
                        // - el puntero de indirectos[0,1 o 2] no está declarado, no apunta a ningún sitio
                        // - el array del nivel en el que esté, no apunta a ningún sitio, 
                        //   es decir no permite seguir la ruta teórica que permitiría llegar al bloque buscado
 
-            if(reservar == 0) return -1; // Si no se pretende reservar ningún bloque, finaliza la ejecución ya que no hay nada que devolver
-            
+            if (reservar == 0) return -1; // Si no se pretende reservar ningún bloque, finaliza la ejecución ya que no hay nada que devolver
+
             // reserva el bloque de punteros, la función devuelve el puntero con el que posteriormente 
             // se hará la inicialización de alguno de los 3 elementos del array de indirectos[0,1 o 2] 
             // que no haya sido declarado previamente
-            if((ptr = reservar_bloque()) == FALLO) return FALLO; 
+            if ((ptr = reservar_bloque()) == FALLO) return FALLO;
 
             // Se actualiza el num de bloques ocupados por el inodo en el campo de datos del disco
             // y se pone la fecha actual como fecha de última modificación del inodo
@@ -470,26 +467,24 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
             inodo.ctime = time(NULL); //time_t t = time(NULL);
             salvar_inodo = 1; // Es un flag para marcar que se han realizado cambios en el inodo y que estos deben sobreescribirse en el disco
 
-            if(nivel_punteros == nRangoBL) { // el bloque cuelga directamente del inodo, es decir, estamos en la primera iteración
+            if (nivel_punteros == nRangoBL) { // el bloque cuelga directamente del inodo, es decir, estamos en la primera iteración
                 // pone el bloque de punteros reservado en el array de indirectos
-                // P.EJ.: según obtener_rango -> indirectos[0] tiene rango 1, 
-                // por tanto para escribir el ptr en indirectos[0] se debe poner indirectos[nRangoBL-1] 
+                // P.EJ.: según obtener_rango -> indirectos[0] tiene rango 1,
+                // por tanto para escribir el ptr en indirectos[0] se debe poner indirectos[nRangoBL-1]
                 inodo.punterosIndirectos[nRangoBL-1] = ptr; 
-
                 DEBUG("inodo.punterosIndirectos[%1$d] = %2$u (reservado BF %2$u para punteros_nivel%3$d)", nRangoBL-1, ptr, nivel_punteros);
-                
             } else { //el bloque cuelga de otro bloque de punteros
                 buffer[indice] = ptr;
-                if(bwrite(ptr_ant, buffer) == FALLO) return FALLO; // salvamos en el dispositivo el buffer de punteros modificado, 
-                                                                   // es decir el array anterior, en el que se ha añadido
-                                                                   // una dirección nueva al reservar un bloque  
+                if (bwrite(ptr_ant, buffer) == FALLO) return FALLO; // salvamos en el dispositivo el buffer de punteros modificado, 
+                                                                    // es decir el array anterior, en el que se ha añadido
+                                                                    // una dirección nueva al reservar un bloque  
                 DEBUG("punteros_nivel%1$d [%2$d] = %3$u (reservado BF %3$u para punteros_nivel%4$d)", nivel_punteros+1, indice, ptr, nivel_punteros);
-            } 
-            memset(buffer, 0, BLOCKSIZE); //ponemos a 0 todos los punteros del buffer              
+            }
+            memset(buffer, 0, BLOCKSIZE); // ponemos a 0 todos los punteros del buffer
         } else {
-            if(bread(ptr, buffer) == FALLO) return FALLO; //leemos del dispositivo el bloque de punteros ya existente
+            if (bread(ptr, buffer) == FALLO) return FALLO; // leemos del dispositivo el bloque de punteros ya existente
         }
-        
+
         // P.ej.: en Indirectos2, que hay 3 niveles de recursividad, la función obtener_indice funciona de la siguiente manera:
         // Si nivel_punteros == 3 obtener_indice devuelve indice pertinente (para ir hacia el nbloque buscado) del array de punteros que cuelga del inodo (Nivel3)
         // si nivel_punteros == 2 obtener_indice devuelve el indice del array que cuelga del anterior array
@@ -502,25 +497,23 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
         nivel_punteros--; // Decrementa el nivel, es decir va más adentro, profundiza en la recursividad
     }
 
-
-    if(ptr == 0) { //no existe bloque de datos
-        if(reservar == 0) return -1;
-        if((ptr = reservar_bloque()) == FALLO) return FALLO; //de datos
+    if (ptr == 0) { //no existe bloque de datos
+        if (reservar == 0) return -1;
+        if ((ptr = reservar_bloque()) == FALLO) return FALLO; // de datos
         inodo.numBloquesOcupados++;
         inodo.ctime = time(NULL);
         salvar_inodo = 1;
-        
-        if(nRangoBL == 0) { //si era un puntero Directo 
-            inodo.punterosDirectos[nblogico] = ptr; //asignamos la direción del bl. de datos en el inodo
-            DEBUG("inodo.punterosDirectos[%1$u] = %2$u (reservado BF %2$u para BL %1$u)]", nblogico, ptr)
+
+        if (nRangoBL == 0) { // si era un puntero Directo
+            inodo.punterosDirectos[nblogico] = ptr; // asignamos la direción del bl. de datos en el inodo
+            DEBUG("inodo.punterosDirectos[%1$u] = %2$u (reservado BF %2$u para BL %1$u)]", nblogico, ptr);
         } else {
-            buffer[indice] = ptr; //asignamos la dirección del bloque de datos en el buffer
-            if(bwrite(ptr_ant, buffer) == FALLO) return FALLO; //salvamos en el dispositivo el buffer de punteros modificado 
+            buffer[indice] = ptr; // asignamos la dirección del bloque de datos en el buffer
+            if (bwrite(ptr_ant, buffer) == FALLO) return FALLO; // salvamos en el dispositivo el buffer de punteros modificado 
             DEBUG("punteros_nivel%1$d [%2$d] = %3$u (reservado BF %3$u para BL %4$u)", nivel_punteros+1, indice, ptr, nblogico);
         }
     }
 
-    if(salvar_inodo && (escribir_inodo(ninodo, &inodo)) == FALLO) return FALLO;
-    
+    if (salvar_inodo && (escribir_inodo(ninodo, &inodo)) == FALLO) return FALLO;
     return ptr; // Devuelve la dirección del bloque de datos buscado
 }
