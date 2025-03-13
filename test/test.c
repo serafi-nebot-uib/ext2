@@ -7,6 +7,7 @@
 #include "../src/logging.h"
 #include "../src/bloques.h"
 #include "../src/ficheros_basico.h"
+#include "../src/ficheros.h"
 
 #define DEFAULT_DEVICE_NAME "disco_test"
 #define DEFAULT_BLOCK_CNT 100000
@@ -143,7 +144,7 @@ void test_leer_escribir_bit() {
     assert(escribir_bit(block, 0) != FALLO);
     assert(leer_bit(block) == 0);
 
-    assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+    assert(bumount() != FALLO);
     DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
 }
 
@@ -169,7 +170,7 @@ void test_reservar_bloque() {
         assert(leer_bit(blocks[i]) == 0);
     }
 
-    assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+    assert(bumount() != FALLO);
     DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
 }
 
@@ -192,8 +193,39 @@ void test_traducir_bloque_inodo() {
         assert(traducir_bloque_inodo(ninode, tests[i], 0) != FALLO);
     }
 
-    assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+    assert(bumount() != FALLO);
     DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
+}
+
+void test_write_f() {
+    DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
+    assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+
+    memset(buff_1, 0x00, BLOCKSIZE);
+    for (int i = 0; i < DEFAULT_BLOCK_CNT; i++) assert(bwrite(i, buff_1) != FALLO);
+    assert(initSB(DEFAULT_BLOCK_CNT, DEFAULT_BLOCK_CNT / 4) != FALLO);
+    assert(initMB() != FALLO);
+    assert(initAI() != FALLO);
+
+    int ninode = reservar_inodo('d', 07);
+    assert(ninode != FALLO);
+
+    const unsigned int start = 9000;
+    const unsigned int size = 3571;
+
+    // const unsigned int start = 1024;
+    // const unsigned int size = 128;
+
+    unsigned char *buff = (unsigned char *) malloc(size);
+    assert(buff != NULL);
+    memset(buff, 0x41, size);
+
+    assert(mi_write_f(ninode, buff, start, size) == size);
+
+    free(buff);
+
+    assert(bumount() != FALLO);
+    // DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
 }
 
 // TODO: reservar_bloque test
@@ -206,6 +238,7 @@ int main(int argc, char **argv) {
     // test_init_fs();
     // test_leer_escribir_bit();
     // test_reservar_bloque();
-    test_traducir_bloque_inodo();
+    // test_traducir_bloque_inodo();
+    test_write_f();
     return 0;
 }
