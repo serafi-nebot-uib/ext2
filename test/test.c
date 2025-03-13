@@ -210,11 +210,11 @@ void test_write_f() {
     int ninode = reservar_inodo('d', 07);
     assert(ninode != FALLO);
 
-    const unsigned int start = 9000;
-    const unsigned int size = 3571;
+    // const unsigned int start = 9000;
+    // const unsigned int size = 3571;
 
-    // const unsigned int start = 1024;
-    // const unsigned int size = 128;
+    const unsigned int start = 9000 + 9000 % 16;
+    const unsigned int size = 3571;
 
     unsigned char *buff = (unsigned char *) malloc(size);
     assert(buff != NULL);

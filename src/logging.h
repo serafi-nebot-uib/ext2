@@ -9,7 +9,7 @@
 #define __LOGGING_H__
 
 #ifndef DEBUG_EN
-#define DEBUG_EN 1
+#define DEBUG_EN 0
 #endif
 
 #ifndef DEBUG_FILE_NAME
