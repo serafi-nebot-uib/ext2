@@ -43,6 +43,12 @@ typedef union {
 #define INODOSIZE           128 // tamaño en bytes de un inodo
 #define INODOS_IN_BLOCK     (BLOCKSIZE/INODOSIZE) // numero de inodos en un bloque
 
+#define INODE_P_READ     0b100
+#define INODE_P_WRITE    0b010
+#define INODE_P_EXECUTE  0b001
+
+#define INODE_P(perm, mask) (((perm) & (mask)) == (mask))
+
 typedef union {
     struct {
         unsigned char tipo;                     // tipo ('l':libre, 'd':directorio o 'f':fichero)
