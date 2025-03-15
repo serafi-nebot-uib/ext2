@@ -1,0 +1,21 @@
+body {
+	margin: 0;
+}
+
+.container {
+	width: 100%;
+}
+
+
+.fs-section-box {
+	stroke: black;
+	stroke-width: 1;
+}
+
+.fs-section-title {
+	text-anchor: middle;
+	dominant-baseline: central;
+	font-size: 6px;
+	font-family: fira code, Monaco, Consolas, ubuntu mono, monospace;
+	fill: white;
+}
