@@ -73,7 +73,7 @@ int bwrite(unsigned int nbloque, const void *buf) {
  * Leer los datos almacenados en el bloque número nbloque al buffer de datos buf
  *
  * @param nbloque número de bloque al que leer
- * @param buf puntero al buffer de datos a leer (debe ser un buffer de BLOCKSIZE bytes)
+ * @param buf dirección donde se volcarán los datos leídos (debe ser un buffer de BLOCKSIZE bytes)
  * @return número de bytes leídos, FALLO en caso de error
  */
 int bread(unsigned int nbloque, void *buf) {
