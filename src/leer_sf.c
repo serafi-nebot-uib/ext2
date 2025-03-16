@@ -35,9 +35,9 @@ int main(int argc, char **argv) {
     printf("totBloques = %d\n", sb.totBloques);
     printf("totInodos = %d\n", sb.totInodos);
     printf("\n");
-    printf("sizeof struct superbloque: %lu\n", sizeof(superbloque_t));
-    printf("sizeof struct inodo: %lu\n", sizeof(inodo_t));
-    printf("\n");
+    // printf("sizeof struct superbloque: %lu\n", sizeof(superbloque_t));
+    // printf("sizeof struct inodo: %lu\n", sizeof(inodo_t));
+    // printf("\n");
 
     // inodo_t inodos[BLOCKSIZE / INODOSIZE] = {};
     // for (unsigned int i = sb.posPrimerBloqueAI; i <= sb.posUltimoBloqueAI; i++) {
@@ -96,46 +96,47 @@ int main(int argc, char **argv) {
     // printf("tamEnBytesLog: %u\n", inodo.tamEnBytesLog);
     // printf("numBloquesOcupados: %u\n", inodo.numBloquesOcupados);
 
-    printf("INODO 1. TRADUCCION DE LOS BLOQUES LOGICOS 8, 204, 30.004, 400.004 y 468.750\n\n");
-    unsigned int blocks[] = { 8, 204, 30004, 400004, 468750 };
-    int ninode = reservar_inodo('f', 06);
-    for (unsigned int i = 0; i < sizeof(blocks) / sizeof(*blocks); i++) {
-        traducir_bloque_inodo(ninode, blocks[i], 1);
-        printf("\n");
-    }
 
-    inodo_t inode = {};
-    leer_inodo(ninode, &inode);
-    printf("DATOS DEL INODO RESERVADO 1\n");
-    printf("tipo: %c\n", inode.tipo);
-    printf("permisos: %hhu\n", inode.permisos);
+    // printf("INODO 1. TRADUCCION DE LOS BLOQUES LOGICOS 8, 204, 30.004, 400.004 y 468.750\n\n");
+    // unsigned int blocks[] = { 8, 204, 30004, 400004, 468750 };
+    // int ninode = reservar_inodo('f', 06);
+    // for (unsigned int i = 0; i < sizeof(blocks) / sizeof(*blocks); i++) {
+    //     traducir_bloque_inodo(ninode, blocks[i], 1);
+    //     printf("\n");
+    // }
 
-    char time_str[32] = {};
-    struct tm *ts;
+    // inodo_t inode = {};
+    // leer_inodo(ninode, &inode);
+    // printf("DATOS DEL INODO RESERVADO 1\n");
+    // printf("tipo: %c\n", inode.tipo);
+    // printf("permisos: %hhu\n", inode.permisos);
 
-    ts = localtime(&inode.atime);
-    strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
-    printf("atime: %s\n", time_str);
+    // char time_str[32] = {};
+    // struct tm *ts;
 
-    ts = localtime(&inode.mtime);
-    strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
-    printf("mtime: %s\n", time_str);
+    // ts = localtime(&inode.atime);
+    // strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+    // printf("atime: %s\n", time_str);
 
-    ts = localtime(&inode.ctime);
-    strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
-    printf("ctime: %s\n", time_str);
+    // ts = localtime(&inode.mtime);
+    // strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+    // printf("mtime: %s\n", time_str);
 
-    ts = localtime(&inode.btime);
-    strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
-    printf("btime: %s\n", time_str);
+    // ts = localtime(&inode.ctime);
+    // strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+    // printf("ctime: %s\n", time_str);
 
-    strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
-    printf("nlinks: %u\n", inode.nlinks);
-    printf("tamEnBytesLog: %u\n", inode.tamEnBytesLog);
-    printf("numBloquesOcupados: %u\n", inode.numBloquesOcupados);
+    // ts = localtime(&inode.btime);
+    // strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+    // printf("btime: %s\n", time_str);
 
-    if (bread(posSB, &sb) == FALLO) return FALLO;
-    printf("sb.posPrimerInodoLibre: %u\n", sb.posPrimerInodoLibre);
+    // strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+    // printf("nlinks: %u\n", inode.nlinks);
+    // printf("tamEnBytesLog: %u\n", inode.tamEnBytesLog);
+    // printf("numBloquesOcupados: %u\n", inode.numBloquesOcupados);
+
+    // if (bread(posSB, &sb) == FALLO) return FALLO;
+    // printf("sb.posPrimerInodoLibre: %u\n", sb.posPrimerInodoLibre);
 
     if (bumount() == FALLO) {
         fprintf(stderr, "error al desmontar el dispositivo virtual %s\n", nombre_dispositivo);
