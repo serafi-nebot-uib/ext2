@@ -46,18 +46,18 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         offset += size;
         if (bwrite(bn, dst) == FALLO) return FALLO;
 
-        fprintf(stderr, GRAY "mi_write_f() -> boff = %u\n" RESET, boff);
-        fprintf(stderr, GRAY BOLD "mi_write_f() -> buf_original (src): \n:" RESET);
-        for (size_t i = 0; i < nbytes; i++) fprintf(stderr, GRAY "%02X " RESET, src[i]); 
-        fprintf(stderr, "\n\n");
-        fprintf(stderr, GRAY BOLD "mi_write_f() -> buff escrito (bloque completo): \n" RESET);
-        for (size_t i = 0; i < BLOCKSIZE; i++){
-            if(i >= boff && i < boff+size) fprintf(stderr, GRAY "%02X " RESET, dst[i]);
-            else fprintf(stderr, GREEN "%02X " RESET, dst[i]); 
-        }
+        // fprintf(stderr, GRAY "mi_write_f() -> boff = %u\n" RESET, boff);
+        // fprintf(stderr, GRAY BOLD "mi_write_f() -> buf_original (src): \n:" RESET);
+        // for (size_t i = 0; i < nbytes; i++) fprintf(stderr, GRAY "%02X " RESET, src[i]); 
+        // fprintf(stderr, "\n\n");
+        // fprintf(stderr, GRAY BOLD "mi_write_f() -> buff escrito (bloque completo): \n" RESET);
+        // for (size_t i = 0; i < BLOCKSIZE; i++){
+        //     if(i >= boff && i < boff+size) fprintf(stderr, GRAY "%02X " RESET, dst[i]);
+        //     else fprintf(stderr, GREEN "%02X " RESET, dst[i]); 
+        // }
     }
 
-    fprintf(stderr, "\n");
+    // fprintf(stderr, "\n");
 
     unsigned int size = offset - start; // número total de bytes escritos
 
@@ -74,7 +74,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 }
 
 /** 
- * Función mi_read_f
+ * Lee los nbytes de los datos de un inodo a partir de un offset dado
  * 
  * @param ninodo
  * @param buf_original
@@ -94,7 +94,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
     // Comprueba que el inodo tenga permisos de lectura
     if (!INODE_P(inodo.permisos, INODE_P_READ)) {
-        ERROR("inodo %d no tiene permisos de escritura", ninodo);
+        ERROR("inodo %d no tiene permisos de lectura", ninodo);
         return FALLO;
     }
 
@@ -111,11 +111,11 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     int desp1 = offset % BLOCKSIZE; // Bytes de offset, desplazamiento dentro del bloque INICIAL
     int desp2 = ultimoByteLogico % BLOCKSIZE; // Bytes de offset, desplazamiento dentro del ÚLTIMO bloque
 
-    fprintf(stderr, GRAY "ultimoByteLogico: %d\n" RESET, ultimoByteLogico);
-    fprintf(stderr, GRAY "primerBL: %d\n" RESET, primerBL);
-    fprintf(stderr, GRAY "ultimoBL: %d\n" RESET, ultimoBL);
-    fprintf(stderr, GRAY "desp1: %d\n" RESET, desp1);
-    fprintf(stderr, GRAY "desp2: %d\n\n" RESET, desp2);
+    // fprintf(stderr, GRAY "ultimoByteLogico: %d\n" RESET, ultimoByteLogico);
+    // fprintf(stderr, GRAY "primerBL: %d\n" RESET, primerBL);
+    // fprintf(stderr, GRAY "ultimoBL: %d\n" RESET, ultimoBL);
+    // fprintf(stderr, GRAY "desp1: %d\n" RESET, desp1);
+    // fprintf(stderr, GRAY "desp2: %d\n\n" RESET, desp2);
 
     int nbfisico;
     unsigned int index = 0; //bytesCopiados, controla donde se escriben en el array buf_original los datos leídos en cada iteracion
@@ -125,26 +125,25 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         //fprintf(stderr, GRAY "for(nblogico...) iteración %d (nblogico = %d)\n" RESET, primerBL-nblogico, nblogico);
 
         if((nbfisico = traducir_bloque_inodo(ninodo, nblogico, 0)) == -1){ //Consigue el bfisico asociado al blogico
-            fprintf(stderr, GRAY "traducir_bloque_inodo() no ha conseguido el bfisico asociado al blogico [nbfisico = %d]\n" RESET, nbfisico);
+            // fprintf(stderr, GRAY "traducir_bloque_inodo() no ha conseguido el bfisico asociado al blogico [nbfisico = %d]\n" RESET, nbfisico);
             bytesLeidos += BLOCKSIZE; // Si no existe el bloque físico asociado al blogico, incrementa el contador
             continue;                 // y salta a la siguiente iteración
         }
-       
-        // ¿Se deja el espacio en buf_original de los bloques saltados haciendo una copia exacta del fichero?
-        //  o se hace append de los bloques existentes? Actualmente mi_read_f hace un append de los datos;
-        //  Si se debe dejar espacio entonces buf_original[bytesLeidos] a la hora de hace memcpy
 
-        // Lee el bloque físico e incrementa el contador de bytes leídos sumándole un bloque
-        if((bytesLeidos += bread(nbfisico, buff)) == FALLO) return FALLO;
-        
-        fprintf(stderr, GRAY "mi_read_f() -> buff leido (bloque completo): \n" RESET);
-        for (size_t i = 0; i < BLOCKSIZE; i++){
-            if(i >= desp1 && i < desp1+nbytes) fprintf(stderr, GRAY "%02X " RESET, buff[i]); 
-            else fprintf(stderr, CYAN "%02X " RESET, buff[i]); 
-        }
-        fprintf(stderr, "\n\n:");
-        for (size_t i = desp1; i < desp1+nbytes; i++) fprintf(stderr, "%02X ", buff[i]); 
-        fprintf(stderr, "\n");
+        // Lee el bloque físico e incrementa el contador de bytes leídos
+        int tmp;
+        if((tmp = bread(nbfisico, buff)) == FALLO) return FALLO;
+        bytesLeidos += tmp;
+        //bytesLeidos += BLOCKSIZE;
+
+        // fprintf(stderr, GRAY "mi_read_f() -> buff leido (bloque completo): \n" RESET);
+        // for (size_t i = 0; i < BLOCKSIZE; i++){
+        //     if(i >= desp1 && i < desp1+nbytes) fprintf(stderr, GRAY "%02X " RESET, buff[i]); 
+        //     else fprintf(stderr, CYAN "%02X " RESET, buff[i]); 
+        // }
+        // fprintf(stderr, "\n\n:");
+        // for (size_t i = desp1; i < desp1+nbytes; i++) fprintf(stderr, "%02X ", buff[i]); 
+        // fprintf(stderr, "\n");
         
         if(nblogico == primerBL) { //Si es la 1era iteración
             // fprintf(stderr, GRAY "if(nblogico == primerBL): iteración %d (nblogico = %d)\n" RESET, primerBL-nblogico, nblogico);
