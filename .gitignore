@@ -4,3 +4,5 @@
 build
 tmp
 disco*
+
+__pycache__

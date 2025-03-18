@@ -214,7 +214,9 @@ void test_write_f() {
     // const unsigned int size = 3571;
 
     const unsigned int start = 9000 + 9000 % 16;
-    const unsigned int size = 3571;
+    // const unsigned int size = 3571;
+    const unsigned int size = 3571*2;
+    // const unsigned int size = 1600000;
 
     unsigned char *buff = (unsigned char *) malloc(size);
     assert(buff != NULL);
