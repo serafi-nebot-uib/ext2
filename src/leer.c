@@ -51,9 +51,9 @@ int main(int argc, char **argv) {
         memset(buffer_texto, 0, TAM_BUFFER);
         offset += TAM_BUFFER;
         if ((leidos = mi_read_f(ninodo, buffer_texto, offset, TAM_BUFFER)) == FALLO) return FALLO;
-        hexdump_col(buffer_texto, 0, leidos, offset, 32, 32);
-        printf("***\n");
-        // write(1, buffer_texto, leidos);
+        // hexdump_col(buffer_texto, 0, leidos, offset, 32, 32);
+        // printf("***\n");
+        write(fileno(stdout), buffer_texto, leidos);
         total_leidos += leidos;
     }
 

@@ -9,6 +9,8 @@ from ctypes import Structure, sizeof, c_uint32, c_uint8, c_time_t
 
 BLOCK_SIZE = 1024
 INODE_PTR_TABLE_SIZE = BLOCK_SIZE // sizeof(c_uint32)
+# sizeof(Inode) # TODO: this apparently yiels 112, why?
+INODE_SIZE = 128
 
 class Block(c_uint8 * BLOCK_SIZE): pass # type: ignore[misc]
 class BlockPtr(c_uint32 * INODE_PTR_TABLE_SIZE): # type: ignore[misc]
@@ -33,70 +35,52 @@ class Inode(CStruct):
   @classmethod
   def ptr_lvl(cls, idx: int) -> int: return 0 if idx < 12 else idx - 12 + 1
   @classmethod
-  def ptr_valid(cls, ptr: int) -> bool: return ptr != 0
+  def _ptr_tree(cls, ptrs: Iterable[tuple[int, int]]):
+    ret = []
+    for lvl, ptr in BlockPtr.valid(ptrs):
+      childs = []
+      if lvl > 0:
+        f.seek(ptr * BLOCK_SIZE)
+        childs = cls._ptr_tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
+      ret.append({ ptr: childs })
+    return ret
   @property
-  def ptrs(self) -> Iterable: return ((self.ptr_lvl(i), ptr) for i, ptr in enumerate(self._ptrs))
+  def ptrs(self) -> Iterable: return [(self.ptr_lvl(i), ptr) for i, ptr in enumerate(self._ptrs)]
+  @property
+  def ptr_tree(self): return Inode._ptr_tree(self.ptrs)
 
-def ptr_tree_root():
-  with Path("../disco_test").open("rb") as f:
-    buff = f.read(sizeof(Superblock))
-    sb = Superblock.from_buffer_copy(buff)
+def inode_offset(f, ninode: int) -> int:
+  f.seek(0)
+  sb = Superblock.from_buffer_copy(f.read(sizeof(Superblock)))
+  return sb.inode_start * BLOCK_SIZE + ninode * INODE_SIZE
 
-    # f.seek(sb.bm_start * BLOCK_SIZE)
-    # bm = f.read((sb.bm_end - sb.bm_start + 1) * BLOCK_SIZE)
+def inode_ptr_tree(f, ninode) -> list:
+  f.seek(inode_offset(f, ninode))
+  inode = Inode.from_buffer_copy(f.read(sizeof(Inode)))
 
-    f.seek(sb.inode_start * BLOCK_SIZE)
-    buff = f.read(sizeof(Inode))
-    inode = Inode.from_buffer_copy(buff)
+  def tree(ptrs: Iterable[tuple[int, int]]):
+    ret = []
+    for lvl, ptr in BlockPtr.valid(ptrs):
+      childs = []
+      if lvl > 0:
+        f.seek(ptr * BLOCK_SIZE)
+        childs = tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
+      ret.append({ ptr: childs })
+    return ret
 
-    def _valid(ptrs: Iterable[tuple[int, int]]) -> Iterable[tuple[int, int]]: return (x for x in ptrs if x[1] != 0)
+  return tree(inode.ptrs)
 
-    def tree(ptrs: Iterable[tuple[int, int]]):
-      ret = []
-      for lvl, ptr in BlockPtr.valid(ptrs):
-        childs = []
-        if lvl > 0:
-          f.seek(ptr * BLOCK_SIZE)
-          childs = tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
-        ret.append({ "name": ptr, "children": childs })
-      return ret
-    return tree(inode.ptrs)
+def inodes(f):
+  sb = Superblock.from_buffer_copy(f.read(sizeof(Superblock)))
+
+  inode_offset = sb.inode_start * BLOCK_SIZE
+  for i in range(sb.inode_root, sb.inode_free):
+    f.seek(inode_offset + i * INODE_SIZE)
+    inode = Inode.from_buffer_copy(f.read(sizeof(Inode)))
+    print(f"inode {i}")
+    pprint(inode.ptr_tree, indent=2, width=1)
+    print()
 
 if __name__ == "__main__":
   with Path("disco").open("rb") as f:
-    print("superblock")
-    buff = f.read(sizeof(Superblock))
-    print(hexlify(buff).decode())
-    sb = Superblock.from_buffer_copy(buff)
-    sb.print()
-    print()
-
-    # print("block map")
-    # f.seek(sb.bm_start * BLOCK_SIZE)
-    # bm = f.read((sb.bm_end - sb.bm_start + 1) * BLOCK_SIZE)
-    # print(hexlify(bm).decode())
-    # print(len(bm))
-    # print()
-
-    print("root inode")
-    f.seek(sb.inode_start * BLOCK_SIZE + sizeof(Inode) * 3)
-    buff = f.read(sizeof(Inode))
-    print(hexlify(buff).decode())
-    inode = Inode.from_buffer_copy(buff)
-    inode.print()
-    print(", ".join(map(str, inode.ptrs)))
-    print()
-
-    # def _valid(ptrs: Iterable[tuple[int, int]]) -> Iterable[tuple[int, int]]: return (x for x in ptrs if x[1] != 0)
-    #
-    # def tree(ptrs: Iterable[tuple[int, int]]):
-    #   ret = []
-    #   for lvl, ptr in BlockPtr.valid(ptrs):
-    #     childs = []
-    #     if lvl > 0:
-    #       f.seek(ptr * BLOCK_SIZE)
-    #       childs = tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
-    #     ret.append({ "name": ptr, "children": childs })
-    #   return ret
-    #
-    # pprint(tree(inode.ptrs))
+    inodes(f)

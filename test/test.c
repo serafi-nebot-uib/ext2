@@ -248,6 +248,7 @@ int main(int argc, char **argv) {
     // test_leer_escribir_bit();
     // test_reservar_bloque();
     // test_traducir_bloque_inodo();
-    test_read_write();
+    // test_read_write();
+    printf("%lu\n", sizeof(inodo_t));
     return 0;
 }

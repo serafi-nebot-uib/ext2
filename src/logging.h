@@ -19,7 +19,7 @@
 #endif
 
 #ifndef DEBUG_LVL
-#define DEBUG_LVL 1
+#define DEBUG_LVL 0
 #endif
 
 #if DEBUG_LVL == 0

@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 class HTTPHandler(BaseHTTPRequestHandler):
   def do_GET(self):
     if self.path == "/data":
-      root = { "name": "root inode", "children": ptr_tree_root() }
+      root = { "name": "root inode", "children": ptr_tree_root("../disco_test") }
       self.send_response(200)
       self.send_header("Content-type", "application/json")
       self.end_headers()
