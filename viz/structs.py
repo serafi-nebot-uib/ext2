@@ -63,7 +63,7 @@ def ptr_tree_root():
     return tree(inode.ptrs)
 
 if __name__ == "__main__":
-  with Path("disco_test").open("rb") as f:
+  with Path("disco").open("rb") as f:
     print("superblock")
     buff = f.read(sizeof(Superblock))
     print(hexlify(buff).decode())
@@ -71,15 +71,15 @@ if __name__ == "__main__":
     sb.print()
     print()
 
-    print("block map")
-    f.seek(sb.bm_start * BLOCK_SIZE)
-    bm = f.read((sb.bm_end - sb.bm_start + 1) * BLOCK_SIZE)
+    # print("block map")
+    # f.seek(sb.bm_start * BLOCK_SIZE)
+    # bm = f.read((sb.bm_end - sb.bm_start + 1) * BLOCK_SIZE)
     # print(hexlify(bm).decode())
-    print(len(bm))
-    print()
+    # print(len(bm))
+    # print()
 
     print("root inode")
-    f.seek(sb.inode_start * BLOCK_SIZE)
+    f.seek(sb.inode_start * BLOCK_SIZE + sizeof(Inode) * 3)
     buff = f.read(sizeof(Inode))
     print(hexlify(buff).decode())
     inode = Inode.from_buffer_copy(buff)
@@ -87,16 +87,16 @@ if __name__ == "__main__":
     print(", ".join(map(str, inode.ptrs)))
     print()
 
-    def _valid(ptrs: Iterable[tuple[int, int]]) -> Iterable[tuple[int, int]]: return (x for x in ptrs if x[1] != 0)
-
-    def tree(ptrs: Iterable[tuple[int, int]]):
-      ret = []
-      for lvl, ptr in BlockPtr.valid(ptrs):
-        childs = []
-        if lvl > 0:
-          f.seek(ptr * BLOCK_SIZE)
-          childs = tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
-        ret.append({ "name": ptr, "children": childs })
-      return ret
-
-    pprint(tree(inode.ptrs))
+    # def _valid(ptrs: Iterable[tuple[int, int]]) -> Iterable[tuple[int, int]]: return (x for x in ptrs if x[1] != 0)
+    #
+    # def tree(ptrs: Iterable[tuple[int, int]]):
+    #   ret = []
+    #   for lvl, ptr in BlockPtr.valid(ptrs):
+    #     childs = []
+    #     if lvl > 0:
+    #       f.seek(ptr * BLOCK_SIZE)
+    #       childs = tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
+    #     ret.append({ "name": ptr, "children": childs })
+    #   return ret
+    #
+    # pprint(tree(inode.ptrs))
