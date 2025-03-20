@@ -78,7 +78,7 @@ int bwrite(unsigned int nbloque, const void *buf) {
  */
 int bread(unsigned int nbloque, void *buf) {
     // mueve el cursor del fichero al primer byte del bloque indicado (nbloque * BLOCKSIZE)
-    if (lseek(fd, nbloque*BLOCKSIZE, SEEK_SET) < 0) {
+    if (lseek(fd, nbloque * BLOCKSIZE, SEEK_SET) < 0) {
         ERRSYS("lseek");
         return FALLO;
     }

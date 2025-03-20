@@ -224,8 +224,8 @@ void test_read_write() {
     assert(mi_write_f(ninode, buff, start, size) == size);
     memset(buff, 0, size);
     int s = mi_read_f(ninode, buff, start, size);
-    DEBUG(1, "read size: %d", s);
-    // hexdump(buff, 0, size, 0);
+    hexdump_col(buff, 0, s, start, 32, 8);
+    // TODO: probar casos especiales para mi_read_f (e.g. tamaño a leer > tamaño bytes lógico)
 
     free(buff);
 
