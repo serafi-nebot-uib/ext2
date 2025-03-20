@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
         return FALLO;
     }
 
-    if(mi_chmod_f(ninodo, permisos) == FALLO) return FALLO;
+    if (mi_chmod_f(ninodo, permisos) == FALLO) return FALLO;
 
     if (bumount() == FALLO) {
         fprintf(stderr, "error al desmontar el dispositivo virtual %s\n", nombre_dispositivo);

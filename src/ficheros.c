@@ -45,19 +45,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         memcpy(&dst[boff], &src[offset - start], size);
         offset += size;
         if (bwrite(bn, dst) == FALLO) return FALLO;
-
-        // fprintf(stderr, GRAY "mi_write_f() -> boff = %u\n" RESET, boff);
-        // fprintf(stderr, GRAY BOLD "mi_write_f() -> buf_original (src): \n:" RESET);
-        // for (size_t i = 0; i < nbytes; i++) fprintf(stderr, GRAY "%02X " RESET, src[i]); 
-        // fprintf(stderr, "\n\n");
-        // fprintf(stderr, GRAY BOLD "mi_write_f() -> buff escrito (bloque completo): \n" RESET);
-        // for (size_t i = 0; i < BLOCKSIZE; i++){
-        //     if(i >= boff && i < boff+size) fprintf(stderr, GRAY "%02X " RESET, dst[i]);
-        //     else fprintf(stderr, GREEN "%02X " RESET, dst[i]); 
-        // }
     }
-
-    // fprintf(stderr, "\n");
 
     unsigned int size = offset - start; // número total de bytes escritos
 
@@ -89,7 +77,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
     int bytesLeidos = 0; // Número de bytes leídos realmente
     inodo_t inodo = {};
-    
+
     if(leer_inodo(ninodo, &inodo) == -1) return FALLO;
 
     // Comprueba que el inodo tenga permisos de lectura

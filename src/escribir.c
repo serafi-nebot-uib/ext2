@@ -3,20 +3,20 @@
 
 int main(int argc, char **argv) {
     if (argc != 4 || (argv[3][0] != '0' && argv[3][0] != '1')) { //Aseguramos que hay un 0 o un 1
-        fprintf(stderr, BOLD "Sintaxis: " RESET "%s <nombre_dispositivo><\"$(cat fichero)\"> <diferentes_inodos>\n", argv[0]);
-        fprintf(stderr, BOLD "Offsets: " RESET "9000, 209000, 30725000, 409605000, 480000000\n");
-        fprintf(stderr, "Si diferentes_inodos=0 se reserva un solo inodo para todos los offsets\n\n");
+        fprintf(stderr, BOLD "sintaxis: " RESET "%s <nombre_dispositivo> <texto> <diferentes_inodos>\n", argv[0]);
+        fprintf(stderr, BOLD "offsets: " RESET "9000, 209000, 30725000, 409605000, 480000000\n");
+        fprintf(stderr, "si diferentes_inodos=0 se reserva un solo inodo para todos los offsets\n\n");
         return FALLO;
     }
 
     const char * nombre_dispositivo = argv[1];
     const char * buf_original = argv[2];  // texto
     unsigned int nbytes = strlen(buf_original); // longitud del texto
-    
+
     // Si diferentes_inodos = 0 se reserva un solo inodo para todos los offsets. 
     // Si diferentes_inodos = 1 se reserva un inodo diferente para cada offset. 
     const int diferentes_inodos = atoi(argv[3]);
-    
+
     // fprintf(stderr, GRAY "\n[leer.c]\n");
     // fprintf(stderr, "(argv[1]) nombre_dispositivo: %s\n", nombre_dispositivo);
     // fprintf(stderr, "(argv[2]) buf_original: %s\n", buf_original);
@@ -25,7 +25,6 @@ int main(int argc, char **argv) {
     // for (size_t i = 0; i < nbytes; i++) fprintf(stderr, "%02X ", buf_original[i]); 
     // fprintf(stderr, "\n\n");
     printf("longitud texto (nbytes): %u\n", nbytes); // this is not a debug print
-    
 
     if (bmount(nombre_dispositivo) == FALLO) {
         fprintf(stderr, "error al montar el dispositivo virtual %s\n", nombre_dispositivo);
@@ -39,9 +38,9 @@ int main(int argc, char **argv) {
     int bytesEscritos;
 
     //Reserva un inodo de tipo fichero con permisos de lectura y escritura
-    if((ninodo = reservar_inodo ('f', 6)) == FALLO) return FALLO;
+    if ((ninodo = reservar_inodo ('f', 6)) == FALLO) return FALLO;
 
-    for(unsigned int offset_idx = 0; offset_idx < OFFSET_SIZE; offset_idx++){
+    for (unsigned int offset_idx = 0; offset_idx < OFFSET_SIZE; offset_idx++){
         // fprintf(stderr, GRAY "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━ INICIO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" RESET);
         printf("\nNº inodo reservado: %d\n", ninodo);
         printf("offset: %u\n", offsets[offset_idx]);
@@ -72,10 +71,11 @@ int main(int argc, char **argv) {
             if((ninodo = reservar_inodo ('f', 6)) == FALLO) return FALLO;
         }
     }
-    
+
     if (bumount() == FALLO) {
         fprintf(stderr, "error al desmontar el dispositivo virtual %s\n", nombre_dispositivo);
         return FALLO;
     }
+
     return 0;
 }

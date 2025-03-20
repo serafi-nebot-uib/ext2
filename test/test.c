@@ -8,6 +8,7 @@
 #include "../src/bloques.h"
 #include "../src/ficheros_basico.h"
 #include "../src/ficheros.h"
+#include "../src/helper.h"
 
 #define DEFAULT_DEVICE_NAME "disco_test"
 #define DEFAULT_BLOCK_CNT 100000
@@ -197,7 +198,7 @@ void test_traducir_bloque_inodo() {
     DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
 }
 
-void test_write_f() {
+void test_read_write() {
     DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
     assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
 
@@ -210,17 +211,21 @@ void test_write_f() {
     int ninode = reservar_inodo('d', 07);
     assert(ninode != FALLO);
 
-    // const unsigned int start = 9000;
-    // const unsigned int size = 3571;
-
-    const unsigned int start = 9000 + 9000 % 16;
+    const unsigned int start = 9000;
     const unsigned int size = 3571;
+
+    // const unsigned int start = 9000 + 9000 % 16;
+    // const unsigned int size = 3571;
 
     unsigned char *buff = (unsigned char *) malloc(size);
     assert(buff != NULL);
     memset(buff, 0x41, size);
 
     assert(mi_write_f(ninode, buff, start, size) == size);
+    memset(buff, 0, size);
+    int s = mi_read_f(ninode, buff, start, size);
+    DEBUG(1, "read size: %d", s);
+    // hexdump(buff, 0, size, 0);
 
     free(buff);
 
@@ -239,6 +244,6 @@ int main(int argc, char **argv) {
     // test_leer_escribir_bit();
     // test_reservar_bloque();
     // test_traducir_bloque_inodo();
-    test_write_f();
+    test_read_write();
     return 0;
 }
