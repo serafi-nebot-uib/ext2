@@ -29,6 +29,17 @@ int main(int argc, char **argv) {
     unsigned int offset = 0;
     int leidos, total_leidos = 0;
 
+    DEBUG(1, "stat inodo: %u", ninodo);
+    DEBUG(1, "tipo: %c", stat.tipo);
+    DEBUG(1, "permisos: %hhu", stat.permisos);
+    DEBUG(1, "atime: %lu", stat.atime);
+    DEBUG(1, "mtime: %lu", stat.mtime);
+    DEBUG(1, "ctime: %lu", stat.ctime);
+    DEBUG(1, "btime: %lu", stat.btime);
+    DEBUG(1, "nlinks: %u", stat.nlinks);
+    DEBUG(1, "tamEnBytesLog: %u", stat.tamEnBytesLog);
+    DEBUG(1, "numBloquesOcupados: %u", stat.numBloquesOcupados);
+
     if ((leidos = mi_read_f(ninodo, buffer_texto, offset, TAM_BUFFER)) == FALLO) {
         fprintf(stderr, GRAY "\ntotal_leidos %d\n" RESET, total_leidos);
         fprintf(stderr, GRAY "tamEnBytesLog %u\n" RESET, stat.tamEnBytesLog);
