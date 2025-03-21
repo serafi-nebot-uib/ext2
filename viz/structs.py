@@ -38,51 +38,65 @@ class Inode(CStruct):
   ]
   @classmethod
   def ptr_lvl(cls, idx: int) -> int: return 0 if idx < 12 else idx - 12 + 1
-  @classmethod
-  def _ptr_tree(cls, ptrs: Iterable[tuple[int, int]]):
-    ret = []
-    for lvl, ptr in BlockPtr.valid(ptrs):
-      childs = []
-      if lvl > 0:
-        f.seek(ptr * BLOCK_SIZE)
-        childs = cls._ptr_tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
-      ret.append({ ptr: childs })
-    return ret
   @property
   def ptrs(self) -> Iterable: return [(self.ptr_lvl(i), ptr) for i, ptr in enumerate(self._ptrs)]
-  @property
-  def ptr_tree(self): return Inode._ptr_tree(self.ptrs)
 
 def inode_offset(f, ninode: int) -> int:
   f.seek(0)
   sb = Superblock.from_buffer_copy(f.read(sizeof(Superblock)))
   return sb.inode_start * BLOCK_SIZE + ninode * INODE_SIZE
 
-def inode_ptr_tree(f, ninode) -> list:
+def inode_ptr_tree(f, ninode: int):
   f.seek(inode_offset(f, ninode))
   inode = Inode.from_buffer_copy(f.read(sizeof(Inode)))
 
-  def tree(ptrs: Iterable[tuple[int, int]]):
+  def ptr_tree(ptrs: Iterable[tuple[int, int]]):
     ret = []
     for lvl, ptr in BlockPtr.valid(ptrs):
       childs = []
       if lvl > 0:
         f.seek(ptr * BLOCK_SIZE)
-        childs = tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
+        childs = ptr_tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
       ret.append({ ptr: childs })
     return ret
 
-  return tree(inode.ptrs)
+  return ptr_tree(inode.ptrs)
 
 def inodes(f):
-  sb = Superblock.from_buffer_copy(f.read(sizeof(Superblock)))
+  # sb = Superblock.from_buffer_copy(f.read(sizeof(Superblock)))
+  # for i in range(sb.inode_root, sb.inode_free):
+  #   print(f"inode {i}")
+  #   f.seek(inode_offset(f, i))
+  #   inode = Inode.from_buffer_copy(f.read(sizeof(Inode)))
+  #   print(inode.ptrs)
+  #
+  #   tree = []
+  #   childs = []
+  #   prev_lvl = 0
+  #   stack = [p for p in inode.ptrs if p[1] != 0]
+  #   while len(stack):
+  #     lvl, ptr = stack.pop(0)
+  #     if lvl > 0:
+  #       f.seek(ptr * BLOCK_SIZE)
+  #       buff = f.read(BLOCK_SIZE)
+  #       b = [(lvl-1, p) for p in BlockPtr.from_buffer_copy(buff) if p != 0]
+  #       stack = b + stack
+  #
+  #     if lvl < prev_lvl:
+  #       tree.append(childs)
+  #       childs = []
+  #
+  #     childs.append((lvl, ptr))
+  #     prev_lvl = lvl
+  #   tree.append(childs)
+  #
+  #   pprint(tree, indent=2)
 
-  inode_offset = sb.inode_start * BLOCK_SIZE
+  sb = Superblock.from_buffer_copy(f.read(sizeof(Superblock)))
   for i in range(sb.inode_root, sb.inode_free):
-    f.seek(inode_offset + i * INODE_SIZE)
-    inode = Inode.from_buffer_copy(f.read(sizeof(Inode)))
+    tree = inode_ptr_tree(f, i)
     print(f"inode {i}")
-    pprint(inode.ptr_tree, indent=2, width=1)
+    pprint(tree, indent=2, width=1)
     print()
 
 def block_map(f):
@@ -126,4 +140,4 @@ def block_map(f):
 
 if __name__ == "__main__":
   with Path("disco").open("rb") as f:
-    block_map(f)
+    inodes(f)
