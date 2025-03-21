@@ -5,7 +5,11 @@ from pprint import pprint
 from pathlib import Path
 from binascii import hexlify
 from typing import ClassVar, Any
+from math import ceil
 from ctypes import Structure, sizeof, c_uint32, c_uint8, c_time_t
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 BLOCK_SIZE = 1024
 INODE_PTR_TABLE_SIZE = BLOCK_SIZE // sizeof(c_uint32)
@@ -81,6 +85,45 @@ def inodes(f):
     pprint(inode.ptr_tree, indent=2, width=1)
     print()
 
+def block_map(f):
+    f.seek(0)
+    sb = Superblock.from_buffer_copy(f.read(sizeof(Superblock)))
+
+    f.seek(sb.bm_start * BLOCK_SIZE)
+    size = ceil(sb.block_cnt / 8)
+    bm = (c_uint8 * size).from_buffer_copy(f.read(size))
+
+    table = [
+        (range(0, sb.bm_start),                   1.00, "superblock"), # noqa: PIE808
+        (range(sb.bm_start, sb.bm_end + 1),       0.75, "block map"),
+        (range(sb.inode_start, sb.inode_end + 1), 0.50, "inode array"),
+        (range(sb.data_start, sb.data_end + 1),   0.25, "data"),
+        (range(sb.data_end + 1, sb.block_cnt),    0.00, "free")
+    ]
+    print(size)
+    print(table)
+    res = []
+    block = 0
+    for i in range(size):
+      v = bm[i]
+      for _ in range(8):
+        c = next((c for r, c, *_ in table if block in r))
+        m = float(v & 0x80 != 0)
+        res.append(min(m, c))
+        v = (v << 1) & 0xff
+        block += 1
+
+    rows = sb.block_cnt // 100
+    cols = ceil(sb.block_cnt / rows)
+    data = np.array(res).reshape(rows, cols).transpose()
+
+    plt.imshow(data, cmap="viridis", vmin=0.0, vmax=1.0)
+    cbar = plt.colorbar()
+    cbar.set_ticks([x[1] for x in table])
+    cbar.set_ticklabels([x[2] for x in table])
+    plt.title("Block Map")
+    plt.show()
+
 if __name__ == "__main__":
   with Path("disco").open("rb") as f:
-    inodes(f)
+    block_map(f)
