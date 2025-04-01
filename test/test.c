@@ -237,6 +237,22 @@ void test_read_write() {
     // DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
 }
 
+void test_inode_block_free() {
+    // test_read_write(false, true);
+
+    // assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+    assert(bmount("disco") != FALLO);
+
+    inodo_t inode = {};
+    for (unsigned int ninode = 1; ninode < 2; ninode++) {
+        assert(leer_inodo(ninode, &inode) == EXITO);
+        int freed = liberar_bloques_inodo(0, &inode);
+        printf("inode: %d; freed: %d\n", ninode, freed);
+        assert(escribir_inodo(ninode, &inode) == EXITO);
+    }
+}
+
+
 // TODO: reservar_bloque test
 
 int main(int argc, char **argv) {
@@ -249,6 +265,16 @@ int main(int argc, char **argv) {
     // test_reservar_bloque();
     // test_traducir_bloque_inodo();
     // test_read_write();
-    printf("%lu\n", sizeof(inodo_t));
+
+    // assert(bmount("disco") != FALLO);
+    // unsigned int blocks[] = { 3139, 3140, 3141, 3142, 3143, 3144, 3145, 3146, 3147, 3148, 3149, 3150, 3151, 3152, 3153, 3154, 3155, 3156, 3157, 3158, 3159, 3160, 3161, 3162, 3163, 3164, 3165, 3166, 3167, 3168, 3169, 3170, 3171 };
+
+    test_inode_block_free();
+
+    // printf("checking %lu blocks\n", sizeof(blocks) / sizeof(*blocks));
+    // for (size_t i = 0; i < sizeof(blocks) / sizeof(*blocks); i++) {
+    //     if (leer_bit(blocks[i]) == 1) printf("%u\n", blocks[i]);
+    // }
+
     return 0;
 }

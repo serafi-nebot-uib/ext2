@@ -701,43 +701,34 @@ int liberar_bloques_en_rango(unsigned int primerBL, unsigned int ultimoBL, unsig
  * @param inodo Pointer to the inode structure
  * @return Number of blocks freed, or -1 on error
  */
-int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo) {
+int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
     // If the file is empty, no blocks to free
-    if (inodo->tamEnBytesLog == 0) {
-        return 0;
-    }
+    if (inodo->tamEnBytesLog == 0) return 0;
 
-    // Calculate the last logical block with content
-    unsigned int ultimoBL;
-    if (inodo->tamEnBytesLog % BLOCKSIZE == 0) {
-        ultimoBL = (inodo->tamEnBytesLog / BLOCKSIZE) - 1;
-    } else {
-        ultimoBL = inodo->tamEnBytesLog / BLOCKSIZE;
-    }
+    // calculate the last logical block with content
+    unsigned int ultimoBL = inodo->tamEnBytesLog / BLOCKSIZE;
+    if (inodo->tamEnBytesLog % BLOCKSIZE == 0) ultimoBL -= 1;
 
-    // If the starting block is beyond the last block, nothing to free
-    if (primerBL > ultimoBL) {
-        return 0;
-    }
+    // if the starting block is beyond the last block, nothing to free
+    if (primerBL > ultimoBL) return 0;
 
-    int liberados = 0;
-
-    // Define logical block ranges for each level
-    unsigned int bl_starts[4] = {
+    // define logical block ranges for each level
+    unsigned int bl_starts[] = {
         0,                           // Direct: BL 0
         DIRECTOS,                    // Indirect[0]: BL 12
         DIRECTOS + NPUNTEROS,        // Indirect[1]: BL 268
         DIRECTOS + NPUNTEROS + NPUNTEROS * NPUNTEROS  // Indirect[2]: BL 65804
     };
-    unsigned int bl_ends[4] = {
+    unsigned int bl_ends[] = {
         DIRECTOS - 1,                                   // BL 11
         DIRECTOS + NPUNTEROS - 1,                       // BL 267
         DIRECTOS + NPUNTEROS + NPUNTEROS * NPUNTEROS - 1,  // BL 65803
         DIRECTOS + NPUNTEROS + NPUNTEROS * NPUNTEROS + NPUNTEROS * NPUNTEROS * NPUNTEROS - 1  // BL 16843019
     };
 
+    int liberados = 0;
     // Process each level: direct, single indirect, double indirect, triple indirect
-    for (int level = 0; level < 4; level++) {
+    for (int level = 0; level <= 3; level++) {
         if (primerBL <= bl_ends[level] && ultimoBL >= bl_starts[level]) {
             if (level == 0) {
                 // Handle direct blocks
@@ -751,7 +742,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo) {
                     }
                 }
             } else {
-                // Handle indirect blocks
+                // handle indirect blocks
                 unsigned int *ptr = &inodo->punterosIndirectos[level - 1];
                 if (*ptr != 0) {
                     int liberados_rec = liberar_bloques_en_rango(
@@ -762,9 +753,7 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo) {
                         bl_starts[level],
                         bl_ends[level]
                     );
-                    if (liberados_rec < 0) {
-                        return -1;
-                    }
+                    if (liberados_rec < 0) return -1;
                     liberados += liberados_rec;
                 }
             }
@@ -774,58 +763,58 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo) {
     return liberados;
 }
 
-/**
- * Frees an inode and all its associated blocks, adding it to the list of free inodes.
- * 
- * @param ninodo Inode number to free
- * @return The inode number freed, or -1 on error
- */
-int liberar_inodo(unsigned int ninodo) {
-    // Read the inode
-    struct inodo inodo;
-    if (leer_inodo(ninodo, &inodo) == -1) {
-        fprintf(stderr, "Error reading inode %u\n", ninodo);
-        return -1;
-    }
-
-    // Free all blocks starting from logical block 0
-    int liberados = liberar_bloques_inodo(0, &inodo);
-    if (liberados < 0) {
-        return -1;
-    }
-
-    // Update the number of occupied blocks
-    inodo.numBloquesOcupados -= liberados;
-
-    // Mark the inode as free and reset its logical size
-    inodo.tipo = 'l';  // 'l' indicates a free inode
-    inodo.tamEnBytesLog = 0;
-
-    // Update the list of free inodes
-    struct superbloque SB;
-    if (bread(0, &SB) == -1) {
-        fprintf(stderr, "Error reading superblock\n");
-        return -1;
-    }
-    unsigned int posPrimerInodoLibre = SB.posPrimerInodoLibre;
-    inodo.punterosDirectos[0] = posPrimerInodoLibre;  // Link to the previous first free inode
-    SB.posPrimerInodoLibre = ninodo;                  // Set this inode as the new first free inode
-    SB.cantInodosLibres++;                            // Increment the count of free inodes
-
-    // Write back the superblock
-    if (bwrite(0, &SB) == -1) {
-        fprintf(stderr, "Error writing superblock\n");
-        return -1;
-    }
-
-    // Update the inode's creation time
-    time(&inodo.ctime);
-
-    // Write back the updated inode
-    if (escribir_inodo(ninodo, &inodo) == -1) {
-        fprintf(stderr, "Error writing inode %u\n", ninodo);
-        return -1;
-    }
-
-    return ninodo;  // Return the freed inode number
-}
+// /**
+//  * Frees an inode and all its associated blocks, adding it to the list of free inodes.
+//  * 
+//  * @param ninodo Inode number to free
+//  * @return The inode number freed, or -1 on error
+//  */
+// int liberar_inodo(unsigned int ninodo) {
+//     // Read the inode
+//     struct inodo inodo;
+//     if (leer_inodo(ninodo, &inodo) == -1) {
+//         fprintf(stderr, "Error reading inode %u\n", ninodo);
+//         return -1;
+//     }
+//
+//     // Free all blocks starting from logical block 0
+//     int liberados = liberar_bloques_inodo(0, &inodo);
+//     if (liberados < 0) {
+//         return -1;
+//     }
+//
+//     // Update the number of occupied blocks
+//     inodo.numBloquesOcupados -= liberados;
+//
+//     // Mark the inode as free and reset its logical size
+//     inodo.tipo = 'l';  // 'l' indicates a free inode
+//     inodo.tamEnBytesLog = 0;
+//
+//     // Update the list of free inodes
+//     struct superbloque SB;
+//     if (bread(0, &SB) == -1) {
+//         fprintf(stderr, "Error reading superblock\n");
+//         return -1;
+//     }
+//     unsigned int posPrimerInodoLibre = SB.posPrimerInodoLibre;
+//     inodo.punterosDirectos[0] = posPrimerInodoLibre;  // Link to the previous first free inode
+//     SB.posPrimerInodoLibre = ninodo;                  // Set this inode as the new first free inode
+//     SB.cantInodosLibres++;                            // Increment the count of free inodes
+//
+//     // Write back the superblock
+//     if (bwrite(0, &SB) == -1) {
+//         fprintf(stderr, "Error writing superblock\n");
+//         return -1;
+//     }
+//
+//     // Update the inode's creation time
+//     time(&inodo.ctime);
+//
+//     // Write back the updated inode
+//     if (escribir_inodo(ninodo, &inodo) == -1) {
+//         fprintf(stderr, "Error writing inode %u\n", ninodo);
+//         return -1;
+//     }
+//
+//     return ninodo;  // Return the freed inode number
+// }
