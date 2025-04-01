@@ -572,7 +572,7 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
                     read_cnt++;
                 }
 
-                // a medida que se va bajando de nivel, se almacena el puntero y su índice dentro del bloque de punteros
+                // a medida que se va bajando de nivel se guarda el puntero y su índice
                 lvl_ptrs[lvl - 1] = ptr;
                 lvl_idxs[lvl - 1] = indice;
 
