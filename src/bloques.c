@@ -19,7 +19,7 @@ static int fd = 0;
  */
 int bmount(const char *camino) {
     int ret = FALLO; // contiene el valor de retorno
-    // se cambia la mascara de creación de ficheros a 000 para que se permita qualquier tipo de modo
+    // se cambia la máscara de creación de ficheros a 000 para que se permita qualquier tipo de modo
     // esto es necesario ya que en algunos sistemas la máscara por defecto = 0022, 
     // lo que significa que si creamos un fichero en modo 0666 se va a crear en modo:
     //      0666 & ~0022 = 0b110110110 & ~0b000010010

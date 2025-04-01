@@ -524,74 +524,78 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
  *
  * @param primerBL primer bloque lógico a partir del cual liberar los bloques
  * @param inodo inodo del cual liberar los bloques
- * @return numero de bloques liberados o FALLO en caso de error
+ * @return número de bloques liberados o FALLO en caso de error
  */
 int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
     // si el inodo no tiene datos no hay nada que liberar
     if (inodo->tamEnBytesLog == 0) return 0;
 
-    // calcular el ultimo bloque logico
+    // calcular el último bloque lógico
     unsigned int ultimoBL = inodo->tamEnBytesLog / BLOCKSIZE;
     if (inodo->tamEnBytesLog % BLOCKSIZE == 0) ultimoBL -= 1;
-    DEBUG(1, "primer BL: %u, ultimo BL: %u", primerBL, ultimoBL);
+    DEBUG(1, "primer BL: %u, último BL: %u", primerBL, ultimoBL);
 
     unsigned int read_cnt = 0, write_cnt = 0;
     unsigned int ptr = 0; // puntero actual
-    unsigned int freed = 0; // cantidad de bloques logicos liberados
+    unsigned int freed = 0; // cantidad de bloques lógicos liberados
     unsigned int ptrs[INODE_PTR_LVL_MAX][NPUNTEROS]; // array de bloques de punteros
-    // array de punteros utilizado para comprobar si el bloque de punteros actual esta completamente vacío
+    // array de punteros utilizado para comprobar si el bloque de punteros actual está completamente vacío
     unsigned int ptrs_cmp[NPUNTEROS] = { 0 };
 
     for (unsigned int bl = primerBL; bl <= ultimoBL; bl++) {
-        // obtener el rango para el bloque logico actual
+        // obtener el rango para el bloque lógico actual
         int range = obtener_nRangoBL(inodo, bl, &ptr);
         if (range < 0) return FALLO;
 
-        // obviar bloque si no esta reservado
+        // obviar bloque si no está reservado
         if (ptr == 0) continue;
 
-        if (range == 0) {
-            if (liberar_bloque(inodo->punterosDirectos[bl]) == FALLO) return FALLO;
+        
+        if (range == 0) { // si el puntero al bloque se encuentra en el array de punteros directos
+            if (liberar_bloque(inodo->punterosDirectos[bl]) == FALLO) return FALLO; // libera el bloque
             DEBUG(1, "liberado BF %u de datos para BL %u", inodo->punterosDirectos[bl], bl);
-            inodo->punterosDirectos[bl] = 0;
+            inodo->punterosDirectos[bl] = 0; 
             freed++;
         } else {
             int lvl = range;
-            // punteros e indices para el nivel actual
+            // punteros e índices para el nivel actual
             unsigned int lvl_ptrs[INODE_PTR_LVL_MAX], lvl_idxs[INODE_PTR_LVL_MAX];
 
-            // traverse pointer blocks down to the data block
+            // recorre los bloques de punteros anidados hasta llegar al bloque de datos
             while (ptr > 0 && lvl > 0) {
-                int indice = obtener_indice(bl, lvl);
+                // obtiene el índice del puntero al bloque lógico actual dentro del array de punteros correspondiente
+                int indice = obtener_indice(bl, lvl); 
 
-                // leer el bloque de punteros si es el primer bloque o la primera vez que visitamos este bloque
+                // lee el bloque de punteros si es el primer bloque o la primera vez que visitamos este bloque
                 if (bl == primerBL || indice == 0) {
                     if (bread(ptr, ptrs[lvl - 1]) == FALLO) return FALLO;
                     read_cnt++;
                 }
 
-                // bajar de nivel de puntero
+                // a medida que se va bajando de nivel, se almacena el puntero y su índice dentro del bloque de punteros
                 lvl_ptrs[lvl - 1] = ptr;
                 lvl_idxs[lvl - 1] = indice;
-                ptr = ptrs[lvl - 1][indice];
-                lvl--;
+
+                // toma el nuevo valor del puntero, ubicado dentro del array leído, en el índice obtenido
+                ptr = ptrs[lvl - 1][indice]; 
+                lvl--; // Baja de nivel
             }
 
-            // obviar bloque si no esta reservado
+            // obviar bloque si no está reservado
             if (ptr == 0) continue;
             if (liberar_bloque(ptr) == FALLO) return FALLO;
 #if DEBUG_LVL >= 1
             if (lvl > 0) DEBUG(1, "liberado BF %u de punteros nivel %d para BL %u", ptr, lvl, bl);
             else DEBUG(1, "liberado BF %u de datos para BL %u", ptr, bl);
 #endif
-            freed++;
+            freed++; // incrementa el contador de bloques liberados
 
             // actualizar el puntero padre del bloque liberado
             for (lvl = 1; lvl <= range; lvl++) {
-                int idx = lvl_idxs[lvl - 1];
+                int idx = lvl_idxs[lvl - 1]; 
                 ptrs[lvl - 1][idx] = 0;
 
-                // si el bloque de punteros no esta todo a 0s aún quedan punteros sin liberar y no hay que actualizar el puntero padre
+                // si el bloque de punteros no está todo a 0's aún quedan punteros sin liberar y no hay que actualizar el puntero padre
                 if (memcmp(ptrs[lvl - 1], ptrs_cmp, BLOCKSIZE) != 0) {
                     if (bwrite(lvl_ptrs[lvl - 1], ptrs[lvl - 1]) == FALLO) return FALLO;
                     write_cnt++;
@@ -600,7 +604,7 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
 
                 if (liberar_bloque(lvl_ptrs[lvl - 1]) == FALLO) return FALLO; // liberar puntero padre
 #if DEBUG_LVL >= 1
-                if (lvl > 0) DEBUG(1, "liberado BF %u de punteros nivel %d para BL %u", ptr, lvl, bl);
+                if (lvl > 0) DEBUG(1, "liberado BF %u de punteros nivel %d para BL %u", lvl_ptrs[lvl - 1], lvl, bl);
                 else DEBUG(1, "liberado BF %u de datos para BL %u", ptr, bl);
 #endif
                 freed++;
@@ -625,53 +629,56 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
 /**
  * Liberar inodo
  *
- * @param ninodo numero de inodo a liberar
- * @return numero de inodo liberado o FALLO en caso de error
+ * @param ninodo número de inodo a liberar
+ * @return número de inodo liberado o FALLO en caso de error
  */
 int liberar_inodo(unsigned int ninodo) {
     inodo_t inodo;
     if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO;
 
-    int freed = liberar_bloques_inodo(0, &inodo);
+    int freed = liberar_bloques_inodo(0, &inodo); // libera el inodo empezando desde el primer bloque
     if (freed < 0) return FALLO;
 
     superbloque_t sb;
-    if (bread(0, &sb) == FALLO) return FALLO;
+    if (bread(0, &sb) == FALLO) return FALLO; // lee el superbloque 
 
+    // actualizamos los campos del inodo liberado
     inodo.numBloquesOcupados -= freed;
     inodo.tipo = 'l';
-    inodo.tamEnBytesLog = 0;
-    inodo.punterosDirectos[0] = sb.posPrimerInodoLibre;
+    inodo.tamEnBytesLog = 0; 
+    inodo.punterosDirectos[0] = sb.posPrimerInodoLibre; // enlazamos el inodo actual con el que estaba al principio de la lista
     time(&inodo.ctime);
 
+    // establecemos al inodo como el primer inodo libre en la lista e incrementamos el contador de inodos libres
     sb.posPrimerInodoLibre = ninodo;
     sb.cantInodosLibres++;
 
     if (bwrite(0, &sb) == FALLO) return FALLO;
-    if (escribir_inodo(ninodo, &inodo) == FALLO) return FALLO;
+    if (escribir_inodo(ninodo, &inodo) == FALLO) return FALLO; // escribe el inodo liberado en el sb
 
     return ninodo;
 }
 
 /**
- * Trucar inodo a partir de un numero de bytes.
+ * Truncar inodo a partir de un número de bytes.
  *
- * @param ninodo numero de inodo que trucar
- * @param nbytes numero de bytes que deben quedar en el inodo
- * @return numero de bloques liberados o FALLO en caso de error
+ * @param ninodo número de inodo que truncar
+ * @param nbytes número de bytes que deben quedar en el inodo
+ * @return número de bloques liberados o FALLO en caso de error
  */
 int mi_truncar_f(unsigned int ninodo, unsigned int nbytes) {
     inodo_t inodo;
     if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO;
     if (!INODE_P(inodo.permisos, INODE_P_WRITE)) return FALLO; // comprobar que el inodo tiene permisos de escritura
-    if (nbytes > inodo.tamEnBytesLog) return 0; // si nbytes es mayor al numero de bytes en el inodo ya podemos considerar el inodo como truncado
+    if (nbytes > inodo.tamEnBytesLog) return 0; // si nbytes es mayor al número de bytes en el inodo ya podemos considerar el inodo como truncado
 
     unsigned int primerBL = nbytes / BLOCKSIZE;
     if (nbytes % BLOCKSIZE != 0) primerBL++;
 
-    int freed = liberar_bloques_inodo(primerBL, &inodo);
+    int freed = liberar_bloques_inodo(primerBL, &inodo); // liberamos desde primerBL hasta el final
     if (freed == FALLO) return FALLO;
 
+    // actualizamos los datos del inodo y posteriormente los escribimos en el array de inodos del sb
     inodo.tamEnBytesLog = nbytes;
     inodo.numBloquesOcupados -= freed;
     inodo.mtime = time(NULL);
