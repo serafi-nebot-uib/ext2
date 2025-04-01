@@ -1,3 +1,8 @@
+/**************************************************************************
+* FILENAME: truncar.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
+
 #include "ficheros.h"
 #include "ficheros_basico.h"
 
@@ -23,8 +28,6 @@ int main(int argc, char *argv[]) {
         if (liberados == FALLO) {
             ERROR("no se ha podido liberar el inodo: %u", ninodo);
             return 1;
-        } else {
-            printf("inodo %u liberado correctamente.\n", ninodo);
         }
     } else {
         // si nbytes > 0, se trunca el fichero a nbytes
@@ -32,8 +35,6 @@ int main(int argc, char *argv[]) {
         if (liberados == FALLO) {
             ERROR("no se ha podido truncar el inodo: %u", ninodo);
             return 1;
-        } else {
-            printf("fichero truncado correctamente; bloques liberados: %d\n", liberados);
         }
     }
 

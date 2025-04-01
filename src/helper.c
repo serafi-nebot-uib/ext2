@@ -1,3 +1,8 @@
+/**************************************************************************
+* FILENAME: helper.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
+
 #include "helper.h"
 
 void hexdump_raw(const void * const buff, size_t offset, const size_t size, const uint32_t addr_start, const uint16_t col_cnt, const uint16_t col_sep, FILE *file) {

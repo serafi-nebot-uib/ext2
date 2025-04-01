@@ -1,3 +1,8 @@
+/**************************************************************************
+* FILENAME: ficheros.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
+
 #include "ficheros.h"
 #include "bloques.h"
 #include "ficheros_basico.h"
@@ -106,7 +111,6 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
     for (unsigned int nblogico = primerBL; nblogico <= ultimoBL; nblogico++) {
         if ((nbfisico = traducir_bloque_inodo(ninodo, nblogico, 0)) == FALLO) { // consigue el bfisico asociado al blogico
-            DEBUG(1, "no se ha podido obtener el bloque físico asociado al bloque lógico %u", nblogico);
             index += BLOCKSIZE; // si no existe el bloque físico asociado al blogico, incrementa el contador
             continue;           // y salta a la siguiente iteración
         }

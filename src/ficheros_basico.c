@@ -473,13 +473,13 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
                 // P.EJ.: según obtener_rango -> indirectos[0] tiene rango 1,
                 // por tanto para escribir el ptr en indirectos[0] se debe poner indirectos[nRangoBL-1]
                 inodo.punterosIndirectos[nRangoBL-1] = ptr; 
-                DEBUG(3, "inodo.punterosIndirectos[%1$d] = %2$u (reservado BF %2$u para punteros_nivel%3$d)", nRangoBL-1, ptr, nivel_punteros);
+                DEBUG(1, "inodo.punterosIndirectos[%1$d] = %2$u (reservado BF %2$u para punteros_nivel%3$d)", nRangoBL-1, ptr, nivel_punteros);
             } else { //el bloque cuelga de otro bloque de punteros
                 buffer[indice] = ptr;
                 if (bwrite(ptr_ant, buffer) == FALLO) return FALLO; // salvamos en el dispositivo el buffer de punteros modificado, 
                                                                     // es decir el array anterior, en el que se ha añadido
                                                                     // una dirección nueva al reservar un bloque  
-                DEBUG(3, "punteros_nivel%1$d [%2$d] = %3$u (reservado BF %3$u para punteros_nivel%4$d)", nivel_punteros+1, indice, ptr, nivel_punteros);
+                DEBUG(1, "punteros_nivel%1$d [%2$d] = %3$u (reservado BF %3$u para punteros_nivel%4$d)", nivel_punteros+1, indice, ptr, nivel_punteros);
             }
             memset(buffer, 0, BLOCKSIZE); // ponemos a 0 todos los punteros del buffer
         } else {
@@ -507,11 +507,11 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
 
         if (nRangoBL == 0) { // si era un puntero Directo
             inodo.punterosDirectos[nblogico] = ptr; // asignamos la direción del bl. de datos en el inodo
-            DEBUG(3, "inodo.punterosDirectos[%1$u] = %2$u (reservado BF %2$u para BL %1$u)]", nblogico, ptr);
+            DEBUG(1, "inodo.punterosDirectos[%1$u] = %2$u (reservado BF %2$u para BL %1$u)]", nblogico, ptr);
         } else {
             buffer[indice] = ptr; // asignamos la dirección del bloque de datos en el buffer
             if (bwrite(ptr_ant, buffer) == FALLO) return FALLO; // salvamos en el dispositivo el buffer de punteros modificado 
-            DEBUG(3, "punteros_nivel%1$d [%2$d] = %3$u (reservado BF %3$u para BL %4$u)", nivel_punteros+1, indice, ptr, nblogico);
+            DEBUG(1, "punteros_nivel%1$d [%2$d] = %3$u (reservado BF %3$u para BL %4$u)", nivel_punteros+1, indice, ptr, nblogico);
         }
     }
 
@@ -533,7 +533,9 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
     // calcular el ultimo bloque logico
     unsigned int ultimoBL = inodo->tamEnBytesLog / BLOCKSIZE;
     if (inodo->tamEnBytesLog % BLOCKSIZE == 0) ultimoBL -= 1;
+    DEBUG(1, "primer BL: %u, ultimo BL: %u", primerBL, ultimoBL);
 
+    unsigned int read_cnt = 0, write_cnt = 0;
     unsigned int ptr = 0; // puntero actual
     unsigned int freed = 0; // cantidad de bloques logicos liberados
     unsigned int ptrs[INODE_PTR_LVL_MAX][NPUNTEROS]; // array de bloques de punteros
@@ -550,6 +552,7 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
 
         if (range == 0) {
             if (liberar_bloque(inodo->punterosDirectos[bl]) == FALLO) return FALLO;
+            DEBUG(1, "liberado BF %u de datos para BL %u", inodo->punterosDirectos[bl], bl);
             inodo->punterosDirectos[bl] = 0;
             freed++;
         } else {
@@ -562,8 +565,10 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
                 int indice = obtener_indice(bl, lvl);
 
                 // leer el bloque de punteros si es el primer bloque o la primera vez que visitamos este bloque
-                if (bl == primerBL || indice == 0)
+                if (bl == primerBL || indice == 0) {
                     if (bread(ptr, ptrs[lvl - 1]) == FALLO) return FALLO;
+                    read_cnt++;
+                }
 
                 // bajar de nivel de puntero
                 lvl_ptrs[lvl - 1] = ptr;
@@ -575,6 +580,10 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
             // obviar bloque si no esta reservado
             if (ptr == 0) continue;
             if (liberar_bloque(ptr) == FALLO) return FALLO;
+#if DEBUG_LVL >= 1
+            if (lvl > 0) DEBUG(1, "liberado BF %u de punteros nivel %d para BL %u", ptr, lvl, bl);
+            else DEBUG(1, "liberado BF %u de datos para BL %u", ptr, bl);
+#endif
             freed++;
 
             // actualizar el puntero padre del bloque liberado
@@ -585,10 +594,15 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
                 // si el bloque de punteros no esta todo a 0s aún quedan punteros sin liberar y no hay que actualizar el puntero padre
                 if (memcmp(ptrs[lvl - 1], ptrs_cmp, BLOCKSIZE) != 0) {
                     if (bwrite(lvl_ptrs[lvl - 1], ptrs[lvl - 1]) == FALLO) return FALLO;
+                    write_cnt++;
                     break;
                 }
 
                 if (liberar_bloque(lvl_ptrs[lvl - 1]) == FALLO) return FALLO; // liberar puntero padre
+#if DEBUG_LVL >= 1
+                if (lvl > 0) DEBUG(1, "liberado BF %u de punteros nivel %d para BL %u", ptr, lvl, bl);
+                else DEBUG(1, "liberado BF %u de datos para BL %u", ptr, bl);
+#endif
                 freed++;
 
                 if (lvl == range) {
@@ -598,11 +612,13 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
                     // actualizar el puntero padre
                     ptrs[lvl][lvl_idxs[lvl]] = 0;
                     if (bwrite(lvl_ptrs[lvl], ptrs[lvl]) == FALLO) return FALLO;
+                    write_cnt++;
                 }
             }
         }
     }
 
+    DEBUG(1, "total bloques liberados: %u, total_breads: %u, total_bwrites: %u", freed, read_cnt, write_cnt);
     return freed;
 }
 
