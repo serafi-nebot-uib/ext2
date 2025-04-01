@@ -23,6 +23,8 @@
 #define INDIRECTOS1 (NPUNTEROS * NPUNTEROS + INDIRECTOS0)    // 65.804
 #define INDIRECTOS2 (NPUNTEROS * NPUNTEROS * NPUNTEROS + INDIRECTOS1) // 16.843.020
 
+#define INODE_PTR_LVL_MAX 3
+
 typedef union {
     struct {
         unsigned int posPrimerBloqueMB;                         // posición absoluta del primer bloque del mapa de bits

@@ -95,9 +95,10 @@ def inodes(f):
   sb = Superblock.from_buffer_copy(f.read(sizeof(Superblock)))
   for i in range(sb.inode_root, sb.inode_free):
     tree = inode_ptr_tree(f, i)
-    print(f"inode {i}")
+    # TODO: uncomment prints (used for testing)
+    # print(f"inode {i}")
     pprint(tree, indent=2, width=1)
-    print()
+    # print()
 
 def block_map(f):
     f.seek(0)
