@@ -251,6 +251,8 @@ void test_inode_block_free() {
     assert(leer_inodo(ninode, &inode) == EXITO);
 
     // for (unsigned int i = 0; i < 10000; i++) assert(mi_write_f(ninode, buff, i * BLOCKSIZE, BLOCKSIZE) == BLOCKSIZE);
+    // assert(leer_inodo(ninode, &inode) == EXITO);
+    // printf("inodo.numBloquesOcupados: %u\n", inode.numBloquesOcupados);
 
     int freed = liberar_bloques_inodo(0, &inode);
     printf("inode: %d; freed: %d\n", ninode, freed);

@@ -84,8 +84,8 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos);
 int obtener_nRangoBL(inodo_t *inodo, unsigned int nblogico, unsigned int *ptr);
 int obtener_indice(unsigned int nblogico, int nivel_punteros);
 int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned char reservar);
-
-int liberar_bloques_en_rango(unsigned int primerBL, unsigned int ultimoBL, unsigned int *ptr, int nivel, unsigned int bl_inicial, unsigned int bl_final);
 int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo);
+int liberar_inodo(unsigned int ninodo);
+int mi_truncar_f(unsigned int ninodo, unsigned int nbytes);
 
 #endif

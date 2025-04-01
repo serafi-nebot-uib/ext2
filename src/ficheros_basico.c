@@ -582,6 +582,8 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
                 }
 
                 if (liberar_bloque(lvl_ptrs[lvl - 1]) == FALLO) return FALLO; // liberar puntero padre
+                freed++;
+
                 if (lvl == range) {
                     // estamos en el nivel más alto, actualizamos el array de punteros indirectos del inodo directamente
                     inodo->punterosIndirectos[range - 1] = 0;
@@ -593,6 +595,53 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
             }
         }
     }
+
+    return freed;
+}
+
+int liberar_inodo(unsigned int ninodo) {
+    inodo_t inodo;
+    if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO;
+
+    int freed = liberar_bloques_inodo(0, &inodo);
+    if (freed < 0) return FALLO;
+
+    superbloque_t sb;
+    if (bread(0, &sb) == FALLO) return FALLO;
+
+    inodo.numBloquesOcupados -= freed;
+    inodo.tipo = 'l';
+    inodo.tamEnBytesLog = 0;
+    inodo.punterosDirectos[0] = sb.posPrimerInodoLibre;
+    time(&inodo.ctime);
+
+    sb.posPrimerInodoLibre = ninodo;
+    sb.cantInodosLibres++;
+
+    if (bwrite(0, &sb) == FALLO) return FALLO;
+    if (escribir_inodo(ninodo, &inodo) == FALLO) return FALLO;
+
+    return ninodo;
+}
+
+int mi_truncar_f(unsigned int ninodo, unsigned int nbytes) {
+    inodo_t inodo;
+    if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO;
+    if (!INODE_P(inodo.permisos, INODE_P_WRITE)) return FALLO;
+    if (nbytes > inodo.tamEnBytesLog) return 0; // TODO: should we return 0 or FALLO?
+
+    unsigned int primerBL = nbytes / BLOCKSIZE;
+    if (nbytes % BLOCKSIZE != 0) primerBL++;
+
+    int freed = liberar_bloques_inodo(primerBL, &inodo);
+    if (freed == FALLO) return FALLO;
+
+    inodo.tamEnBytesLog = nbytes;
+    inodo.numBloquesOcupados -= freed;
+    inodo.mtime = time(NULL);
+    inodo.ctime = time(NULL);
+
+    if (escribir_inodo(ninodo, &inodo) == FALLO) return FALLO;
 
     return freed;
 }
