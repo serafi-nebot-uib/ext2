@@ -519,6 +519,13 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
     return ptr; // Devuelve la dirección del bloque de datos buscado
 }
 
+/**
+ * Liberar bloques de datos de un inodo.
+ *
+ * @param primerBL primer bloque lógico a partir del cual liberar los bloques
+ * @param inodo inodo del cual liberar los bloques
+ * @return numero de bloques liberados o FALLO en caso de error
+ */
 int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
     // si el inodo no tiene datos no hay nada que liberar
     if (inodo->tamEnBytesLog == 0) return 0;
@@ -599,6 +606,12 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
     return freed;
 }
 
+/**
+ * Liberar inodo
+ *
+ * @param ninodo numero de inodo a liberar
+ * @return numero de inodo liberado o FALLO en caso de error
+ */
 int liberar_inodo(unsigned int ninodo) {
     inodo_t inodo;
     if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO;
@@ -624,11 +637,18 @@ int liberar_inodo(unsigned int ninodo) {
     return ninodo;
 }
 
+/**
+ * Trucar inodo a partir de un numero de bytes.
+ *
+ * @param ninodo numero de inodo que trucar
+ * @param nbytes numero de bytes que deben quedar en el inodo
+ * @return numero de bloques liberados o FALLO en caso de error
+ */
 int mi_truncar_f(unsigned int ninodo, unsigned int nbytes) {
     inodo_t inodo;
     if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO;
-    if (!INODE_P(inodo.permisos, INODE_P_WRITE)) return FALLO;
-    if (nbytes > inodo.tamEnBytesLog) return 0; // TODO: should we return 0 or FALLO?
+    if (!INODE_P(inodo.permisos, INODE_P_WRITE)) return FALLO; // comprobar que el inodo tiene permisos de escritura
+    if (nbytes > inodo.tamEnBytesLog) return 0; // si nbytes es mayor al numero de bytes en el inodo ya podemos considerar el inodo como truncado
 
     unsigned int primerBL = nbytes / BLOCKSIZE;
     if (nbytes % BLOCKSIZE != 0) primerBL++;
