@@ -519,242 +519,94 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned c
     return ptr; // Devuelve la dirección del bloque de datos buscado
 }
 
-// int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
-//     if (inodo == NULL) return FALLO;
-//     if (inodo->tamEnBytesLog == 0) return 0;  // fichero vacío
-//
-//     unsigned int ultimoBL = 0;
-//     unsigned int nBL = 0;
-//     unsigned int ptr = 0;
-//     int nRangoBL = 0;
-//     unsigned int liberados = 0;
-//
-//     /* calcular el último bloque lógico ocupado */
-//     if (inodo->tamEnBytesLog % BLOCKSIZE == 0) ultimoBL = inodo->tamEnBytesLog / BLOCKSIZE - 1;
-//     else ultimoBL = inodo->tamEnBytesLog / BLOCKSIZE;
-//
-//     /* Para el manejo de bloques indirectos usaremos buffers auxiliares */
-//     unsigned int bloques_punteros[3][NPUNTEROS];
-//     unsigned int bufAux_punteros[NPUNTEROS];
-//     unsigned int ptr_nivel[3];  // punteros a bloques de punteros de cada nivel
-//     unsigned int indices[3];    // índices correspondientes de cada nivel
-//     memset(bufAux_punteros, 0, BLOCKSIZE);
-//
-//     /* Recorrer los bloques lógicos desde primerBL hasta último */
-//     for (nBL = primerBL; nBL <= ultimoBL; nBL++){
-//         /* obtener el rango (0: directo, 1: primer indirecto, etc.) y
-//            el puntero inicial correspondiente */
-//         if ((nRangoBL = obtener_nRangoBL(inodo, nBL, &ptr)) < 0) return FALLO;
-//
-//         int nivel_punteros = nRangoBL;
-//         /* Si es bloque directo, el puntero está en inodo->punterosDirectos[] */
-//         if (nRangoBL == 0) ptr = inodo->punterosDirectos[nBL];
-//         else
-//             /* Para bloques indirectos, se obtiene el primer puntero desde el array
-//                de punterosIndirectos (recordando que el primer nivel indirecto se encuentra
-//                en punterosIndirectos[0], etc.) */
-//             ptr = inodo->punterosIndirectos[nRangoBL - 1];
-//
-//         /* Descender por la cadena de bloques de punteros hasta llegar al bloque de datos */
-//         while (ptr > 0 && nivel_punteros > 0) {
-//             int indice = obtener_indice(nBL, nivel_punteros);
-//             /* Solo se hace bread si es la primera vez que se accede a este nivel */
-//             if (indice == 0 || nBL == primerBL)
-//                 if (bread(ptr, bloques_punteros[nivel_punteros - 1]) == FALLO)
-//                     return FALLO;
-//             ptr_nivel[nivel_punteros - 1] = ptr;
-//             indices[nivel_punteros - 1] = indice;
-//             ptr = bloques_punteros[nivel_punteros - 1][indice];
-//             nivel_punteros--;
-//         }
-//
-//         /* Si se encontró un bloque de datos (ptr > 0) se procede a liberarlo */
-//         if (ptr > 0) {
-//             if (liberar_bloque(ptr) == FALLO) return FALLO;
-//             liberados++;
-//
-//             /* Actualizar el puntero que apuntaba al bloque liberado */
-//             if (nRangoBL == 0) {
-//                 inodo->punterosDirectos[nBL] = 0;
-//             } else {
-//                 /* Para bloques indirectos, se retrocede por la cadena de punteros.
-//                    Se pone a cero el puntero que referenciaba al bloque liberado.
-//                    Luego se comprueba (mediante memcmp) si en ese bloque de punteros quedan
-//                    otros punteros activos. Si no es así, se libera también ese bloque. */
-//                 nivel_punteros = 1;
-//                 while (nivel_punteros <= nRangoBL) {
-//                     int indice = indices[nivel_punteros - 1];
-//                     bloques_punteros[nivel_punteros - 1][indice] = 0;
-//                     unsigned int ptr_actual = ptr_nivel[nivel_punteros - 1];
-//                     if (memcmp(bloques_punteros[nivel_punteros - 1], bufAux_punteros, BLOCKSIZE) == 0) {
-//                         if (liberar_bloque(ptr_actual) == FALLO) return FALLO;
-//                         liberados++;
-//                         /* Si se libera el bloque de punteros a nivel máximo, actualizar el inodo */
-//                         if (nivel_punteros == nRangoBL) inodo->punterosIndirectos[nRangoBL - 1] = 0;
-//                         nivel_punteros++;
-//                     } else {
-//                         /* Si quedan punteros activos, se actualiza el bloque de punteros en disco */
-//                         if (bwrite(ptr_actual, bloques_punteros[nivel_punteros - 1]) == FALLO) return FALLO;
-//                         break;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//
-//     return liberados;
-// }
-
-
-
-
-/***********************************************/
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
-
-/**
- * Helper function to recursively free blocks within a specified range of logical blocks.
- * 
- * @param primerBL First logical block to free
- * @param ultimoBL Last logical block to free
- * @param ptr Pointer to the physical block number of the current index block
- * @param nivel Level of indirection (1 for single, 2 for double, 3 for triple)
- * @param bl_inicial First logical block covered by this index block
- * @param bl_final Last logical block covered by this index block
- * @return Number of blocks freed, or -1 on error
- */
-int liberar_bloques_en_rango(unsigned int primerBL, unsigned int ultimoBL, unsigned int *ptr, int nivel, unsigned int bl_inicial, unsigned int bl_final) {
-    // if the pointer is zero, no blocks to free
-    if (*ptr == 0) return 0;
-
-    // read the block of pointers
-    unsigned int bloque_punteros[NPUNTEROS];
-    if (bread(*ptr, bloque_punteros) == -1) {
-        ERROR("fallo al leer el bloque: %u", *ptr);
-        return FALLO;
-    }
-
-    // keep a copy to detect modifications
-    unsigned int bloque_punteros_original[NPUNTEROS];
-    memcpy(bloque_punteros_original, bloque_punteros, sizeof(bloque_punteros) / sizeof(*bloque_punteros));
-
-    int liberados = 0;
-    // base case: single indirect level (points to data blocks)
-    if (nivel == 1) {
-        for (int i = 0; i < NPUNTEROS; i++) {
-            unsigned int bl = bl_inicial + i;
-            if (bl >= primerBL && bl <= ultimoBL && bloque_punteros[i] != 0) {
-                liberar_bloque(bloque_punteros[i]);  // Free the data block
-                bloque_punteros[i] = 0;              // Clear the pointer
-                liberados++;
-            }
-        }
-    } else {  // higher levels of indirection (double or triple)
-        unsigned int stride = 1; // number of logical blocks covered by each pointer
-        for (int i = 1; i < nivel; i++) stride *= NPUNTEROS;
-        for (int i = 0; i < NPUNTEROS; i++) {
-            unsigned int sub_bl_inicial = bl_inicial + i * stride;
-            unsigned int sub_bl_final = sub_bl_inicial + stride - 1;
-            // Check if this subrange overlaps with the range to free
-            if (sub_bl_final >= primerBL && sub_bl_inicial <= ultimoBL && bloque_punteros[i] != 0) {
-                int liberados_rec = liberar_bloques_en_rango(
-                    max(primerBL, sub_bl_inicial),
-                    min(ultimoBL, sub_bl_final),
-                    &bloque_punteros[i],
-                    nivel - 1,
-                    sub_bl_inicial,
-                    sub_bl_final
-                );
-                if (liberados_rec < 0) {
-                    return -1;
-                }
-                liberados += liberados_rec;
-            }
-        }
-    }
-
-    // Check if the block was modified
-    if (memcmp(bloque_punteros, bloque_punteros_original, BLOCKSIZE) != 0) {
-        unsigned int bufAux_punteros[NPUNTEROS];
-        memset(bufAux_punteros, 0, BLOCKSIZE);  // Buffer of zeros for comparison
-        // If all pointers are now zero, free the index block
-        if (memcmp(bloque_punteros, bufAux_punteros, BLOCKSIZE) == 0) {
-            liberar_bloque(*ptr);
-            *ptr = 0;  // Update the parent pointer
-            liberados++;  // Count the freed index block
-        } else {
-            // Write back the modified block
-            if (bwrite(*ptr, bloque_punteros) == -1) {
-                fprintf(stderr, "Error writing block %u\n", *ptr);
-                return -1;
-            }
-        }
-    }
-
-    return liberados;
-}
-
-/**
- * Frees all occupied physical blocks associated with an inode starting from a given logical block.
- * 
- * @param primerBL First logical block to start freeing from
- * @param inodo Pointer to the inode structure
- * @return Number of blocks freed, or -1 on error
- */
 int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
-    // If the file is empty, no blocks to free
+    /* Si el fichero está vacío, no hay nada que liberar */
     if (inodo->tamEnBytesLog == 0) return 0;
 
-    // calculate the last logical block with content
-    unsigned int ultimoBL = inodo->tamEnBytesLog / BLOCKSIZE;
-    if (inodo->tamEnBytesLog % BLOCKSIZE == 0) ultimoBL -= 1;
+    unsigned int ultimoBL = 0;
+    unsigned int nBL = 0;
+    unsigned int ptr = 0;
+    int nRangoBL = 0;
+    unsigned int liberados = 0;
 
-    // if the starting block is beyond the last block, nothing to free
-    if (primerBL > ultimoBL) return 0;
+    /* Calcular el último bloque lógico ocupado */
+    if (inodo->tamEnBytesLog % BLOCKSIZE == 0) ultimoBL = inodo->tamEnBytesLog / BLOCKSIZE - 1;
+    else ultimoBL = inodo->tamEnBytesLog / BLOCKSIZE;
 
-    // define logical block ranges for each level
-    unsigned int bl_starts[] = {
-        0,                           // Direct: BL 0
-        DIRECTOS,                    // Indirect[0]: BL 12
-        DIRECTOS + NPUNTEROS,        // Indirect[1]: BL 268
-        DIRECTOS + NPUNTEROS + NPUNTEROS * NPUNTEROS  // Indirect[2]: BL 65804
-    };
-    unsigned int bl_ends[] = {
-        DIRECTOS - 1,                                   // BL 11
-        DIRECTOS + NPUNTEROS - 1,                       // BL 267
-        DIRECTOS + NPUNTEROS + NPUNTEROS * NPUNTEROS - 1,  // BL 65803
-        DIRECTOS + NPUNTEROS + NPUNTEROS * NPUNTEROS + NPUNTEROS * NPUNTEROS * NPUNTEROS - 1  // BL 16843019
-    };
+    /* Buffers auxiliares para leer bloques de punteros */
+    unsigned int bloques_punteros[3][NPUNTEROS];
+    unsigned int bufAux[NPUNTEROS];
+    memset(bufAux, 0, BLOCKSIZE);
 
-    int liberados = 0;
-    // Process each level: direct, single indirect, double indirect, triple indirect
-    for (int level = 0; level <= 3; level++) {
-        if (primerBL <= bl_ends[level] && ultimoBL >= bl_starts[level]) {
-            if (level == 0) {
-                // Handle direct blocks
-                unsigned int start_bl = max(primerBL, bl_starts[0]);
-                unsigned int end_bl = min(ultimoBL, bl_ends[0]);
-                for (unsigned int bl = start_bl; bl <= end_bl; bl++) {
-                    if (inodo->punterosDirectos[bl] != 0) {
-                        liberar_bloque(inodo->punterosDirectos[bl]);
-                        inodo->punterosDirectos[bl] = 0;
-                        liberados++;
-                    }
+    /* Recorrer todos los bloques lógicos desde primerBL hasta ultimoBL */
+    for (nBL = primerBL; nBL <= ultimoBL; nBL++) {
+        /* Se obtiene el rango (0: directo, 1: primer indirecto, etc.) y se extrae el puntero inicial */
+        nRangoBL = obtener_nRangoBL(inodo, nBL, &ptr);
+        if (nRangoBL < 0)
+            return FALLO;
+
+        /* Si el puntero es 0, significa que ese bloque lógico ya está libre; se salta */
+        if (ptr == 0)
+            continue;
+
+        if (nRangoBL == 0) {
+            /* Caso directo: el bloque de datos está en inodo->punterosDirectos[nBL] */
+            if(liberar_bloque(inodo->punterosDirectos[nBL]) == FALLO) return FALLO;
+            inodo->punterosDirectos[nBL] = 0;
+            liberados++;
+        } else {
+            /* Caso indirecto: se debe descender por la cadena de bloques de punteros hasta llegar al bloque de datos */
+            int nivel = nRangoBL;
+            unsigned int ptrs[3];   // Guarda los punteros leídos en cada nivel
+            unsigned int indices[3]; // Guarda el índice utilizado en cada nivel
+
+            while (ptr > 0 && nivel > 0) {
+                int indice = obtener_indice(nBL, nivel);
+                /* Si es la primera vez en este nivel (o el primer bloque lógico que se procesa) se lee el bloque de punteros */
+                if ((indice == 0) || (nBL == primerBL)) {
+                    if (bread(ptr, bloques_punteros[nivel - 1]) == FALLO)
+                        return FALLO;
                 }
-            } else {
-                // handle indirect blocks
-                unsigned int *ptr = &inodo->punterosIndirectos[level - 1];
-                if (*ptr != 0) {
-                    int liberados_rec = liberar_bloques_en_rango(
-                        max(primerBL, bl_starts[level]),
-                        min(ultimoBL, bl_ends[level]),
-                        ptr,
-                        level,
-                        bl_starts[level],
-                        bl_ends[level]
-                    );
-                    if (liberados_rec < 0) return -1;
-                    liberados += liberados_rec;
+                ptrs[nivel - 1] = ptr;
+                indices[nivel - 1] = indice;
+                /* Se actualiza "ptr" al puntero contenido en la posición "indice" del bloque leído */
+                ptr = bloques_punteros[nivel - 1][indice];
+                nivel--;
+            }
+            /* Si se llegó a un bloque de datos (ptr > 0) se procede a liberarlo */
+            if (ptr > 0) {
+                if (liberar_bloque(ptr) == FALLO) return FALLO;
+                liberados++;
+                /* Actualizar el puntero que apuntaba al bloque de datos liberado */
+                if (nRangoBL == 1) {
+                    /* Si el bloque se accedió directamente desde el inodo (punterosIndirectos[0]) */
+                    inodo->punterosIndirectos[0] = 0;
+                } else {
+                    /* Para niveles mayores, se recorre la cadena hacia arriba */
+                    int nivel_actual = 1;
+                    while (nivel_actual <= nRangoBL) {
+                        int ind = indices[nivel_actual - 1];
+                        bloques_punteros[nivel_actual - 1][ind] = 0;
+                        /* Se actualiza el bloque de punteros en disco solo si aún quedan entradas no nulas;
+                           de lo contrario, se libera el bloque de punteros intermedio (pero este no se cuenta). */
+                        if (memcmp(bloques_punteros[nivel_actual - 1], bufAux, BLOCKSIZE) == 0) {
+                            if (liberar_bloque(ptrs[nivel_actual - 1]) == FALLO)
+                                return FALLO;
+                            /* Si se liberó el bloque de punteros de nivel máximo, se actualiza en el inodo */
+                            if (nivel_actual == nRangoBL)
+                                inodo->punterosIndirectos[nRangoBL - 1] = 0;
+                            else {
+                                /* Para niveles intermedios, se actualiza el puntero correspondiente en el bloque superior */
+                                bloques_punteros[nivel_actual][indices[nivel_actual]] = 0;
+                                bwrite(ptrs[nivel_actual], bloques_punteros[nivel_actual]);
+                            }
+                            nivel_actual++;
+                        } else {
+                            /* Si el bloque de punteros aún tiene punteros válidos, se actualiza y se termina el bucle */
+                            bwrite(ptrs[nivel_actual - 1], bloques_punteros[nivel_actual - 1]);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -762,59 +614,3 @@ int liberar_bloques_inodo(unsigned int primerBL, inodo_t *inodo) {
 
     return liberados;
 }
-
-// /**
-//  * Frees an inode and all its associated blocks, adding it to the list of free inodes.
-//  * 
-//  * @param ninodo Inode number to free
-//  * @return The inode number freed, or -1 on error
-//  */
-// int liberar_inodo(unsigned int ninodo) {
-//     // Read the inode
-//     struct inodo inodo;
-//     if (leer_inodo(ninodo, &inodo) == -1) {
-//         fprintf(stderr, "Error reading inode %u\n", ninodo);
-//         return -1;
-//     }
-//
-//     // Free all blocks starting from logical block 0
-//     int liberados = liberar_bloques_inodo(0, &inodo);
-//     if (liberados < 0) {
-//         return -1;
-//     }
-//
-//     // Update the number of occupied blocks
-//     inodo.numBloquesOcupados -= liberados;
-//
-//     // Mark the inode as free and reset its logical size
-//     inodo.tipo = 'l';  // 'l' indicates a free inode
-//     inodo.tamEnBytesLog = 0;
-//
-//     // Update the list of free inodes
-//     struct superbloque SB;
-//     if (bread(0, &SB) == -1) {
-//         fprintf(stderr, "Error reading superblock\n");
-//         return -1;
-//     }
-//     unsigned int posPrimerInodoLibre = SB.posPrimerInodoLibre;
-//     inodo.punterosDirectos[0] = posPrimerInodoLibre;  // Link to the previous first free inode
-//     SB.posPrimerInodoLibre = ninodo;                  // Set this inode as the new first free inode
-//     SB.cantInodosLibres++;                            // Increment the count of free inodes
-//
-//     // Write back the superblock
-//     if (bwrite(0, &SB) == -1) {
-//         fprintf(stderr, "Error writing superblock\n");
-//         return -1;
-//     }
-//
-//     // Update the inode's creation time
-//     time(&inodo.ctime);
-//
-//     // Write back the updated inode
-//     if (escribir_inodo(ninodo, &inodo) == -1) {
-//         fprintf(stderr, "Error writing inode %u\n", ninodo);
-//         return -1;
-//     }
-//
-//     return ninodo;  // Return the freed inode number
-// }

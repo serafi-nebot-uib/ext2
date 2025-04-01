@@ -243,13 +243,32 @@ void test_inode_block_free() {
     // assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
     assert(bmount("disco") != FALLO);
 
+    unsigned char buff[BLOCKSIZE] = {};
+    memset(buff, 0xff, BLOCKSIZE);
+
+    unsigned int ninode = 0;
     inodo_t inode = {};
-    for (unsigned int ninode = 1; ninode < 2; ninode++) {
-        assert(leer_inodo(ninode, &inode) == EXITO);
-        int freed = liberar_bloques_inodo(0, &inode);
-        printf("inode: %d; freed: %d\n", ninode, freed);
-        assert(escribir_inodo(ninode, &inode) == EXITO);
-    }
+    assert(leer_inodo(ninode, &inode) == EXITO);
+
+    // for (unsigned int i = 0; i < 10000; i++) assert(mi_write_f(ninode, buff, i * BLOCKSIZE, BLOCKSIZE) == BLOCKSIZE);
+
+    int freed = liberar_bloques_inodo(0, &inode);
+    printf("inode: %d; freed: %d\n", ninode, freed);
+    assert(escribir_inodo(ninode, &inode) == EXITO);
+
+    // unsigned int ptr = 0;
+    // int rango = obtener_nRangoBL(&inode, 9999, &ptr);
+    // printf("rango: %d\n", rango);
+
+    // inodo_t inode = {};
+    // for (unsigned int ninode = 1; ninode < 2; ninode++) {
+    //     assert(leer_inodo(ninode, &inode) == EXITO);
+    //     int freed = liberar_bloques_inodo(0, &inode);
+    //     printf("inode: %d; freed: %d\n", ninode, freed);
+    //     assert(escribir_inodo(ninode, &inode) == EXITO);
+    // }
+
+    assert(bumount() != FALLO);
 }
 
 
