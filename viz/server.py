@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
 import json
-import random
-from structs import ptr_tree_root
+from pathlib import Path
+from structs import inode_ptr_tree_from_file
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 class HTTPHandler(BaseHTTPRequestHandler):
   def do_GET(self):
     if self.path == "/data":
-      root = { "name": "root inode", "children": ptr_tree_root("../disco_test") }
+      ninode = 0
+      root = { "name": f"inode {ninode}", "children": inode_ptr_tree_from_file("../disco", ninode) }
       self.send_response(200)
       self.send_header("Content-type", "application/json")
       self.end_headers()
@@ -17,7 +18,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
       try:
         if self.path == "/":
           self.path = "/index.html"
-        with open("./static" + self.path, "rb") as f:
+        with Path("./static" + self.path).open("rb") as f:
           self.send_response(200)
           if self.path.endswith(".html"):
             self.send_header("Content-type", "text/html")
