@@ -57,48 +57,21 @@ def inode_ptr_tree(f, ninode: int):
       if lvl > 0:
         f.seek(ptr * BLOCK_SIZE)
         childs = ptr_tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
-      ret.append({ ptr: childs })
+      ret.append({ "name": ptr, "children": childs })
     return ret
 
   return ptr_tree(inode.ptrs)
 
-def inodes(f):
-  # sb = Superblock.from_buffer_copy(f.read(sizeof(Superblock)))
-  # for i in range(sb.inode_root, sb.inode_free):
-  #   print(f"inode {i}")
-  #   f.seek(inode_offset(f, i))
-  #   inode = Inode.from_buffer_copy(f.read(sizeof(Inode)))
-  #   print(inode.ptrs)
-  #
-  #   tree = []
-  #   childs = []
-  #   prev_lvl = 0
-  #   stack = [p for p in inode.ptrs if p[1] != 0]
-  #   while len(stack):
-  #     lvl, ptr = stack.pop(0)
-  #     if lvl > 0:
-  #       f.seek(ptr * BLOCK_SIZE)
-  #       buff = f.read(BLOCK_SIZE)
-  #       b = [(lvl-1, p) for p in BlockPtr.from_buffer_copy(buff) if p != 0]
-  #       stack = b + stack
-  #
-  #     if lvl < prev_lvl:
-  #       tree.append(childs)
-  #       childs = []
-  #
-  #     childs.append((lvl, ptr))
-  #     prev_lvl = lvl
-  #   tree.append(childs)
-  #
-  #   pprint(tree, indent=2)
+def inode_ptr_tree_from_file(path: str, ninode: int):
+  with Path(path).open("rb") as f: return inode_ptr_tree(f, ninode)
 
+def inodes(f):
   sb = Superblock.from_buffer_copy(f.read(sizeof(Superblock)))
   for i in range(sb.inode_root, sb.inode_free):
     tree = inode_ptr_tree(f, i)
-    # TODO: uncomment prints (used for testing)
-    # print(f"inode {i}")
+    print(f"inode {i}")
     pprint(tree, indent=2, width=1)
-    # print()
+    print()
 
 def block_map(f):
     f.seek(0)
@@ -141,4 +114,6 @@ def block_map(f):
 
 if __name__ == "__main__":
   with Path("disco").open("rb") as f:
-    inodes(f)
+    print(inode_ptr_tree(f, 0))
+    # inodes(f)
+    # block_map(f)
