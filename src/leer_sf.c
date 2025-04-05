@@ -3,8 +3,20 @@
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
-#include "bloques.h"
-#include "ficheros_basico.h"
+#include "directorios.h"
+
+void mostrar_buscar_entrada(char *camino, char reservar){
+  unsigned int p_inodo_dir = 0;
+  unsigned int p_inodo = 0;
+  unsigned int p_entrada = 0;
+  int error;
+  printf("\ncamino: %s, reservar: %d\n", camino, reservar);
+  if ((error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, reservar, 6)) < 0) {
+    mostrar_error_buscar_entrada(error);
+  }
+  printf("**********************************************************************\n");
+  return;
+}
 
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -21,6 +33,7 @@ int main(int argc, char **argv) {
     superbloque_t sb = {};
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
+    printf("\n");
     printf("DATOS DEL SUPERBLOQUE\n");
     printf("posPrimerBloqueMB = %d\n", sb.posPrimerBloqueMB);
     printf("posUltimoBloqueMB = %d\n", sb.posUltimoBloqueMB);
@@ -34,10 +47,25 @@ int main(int argc, char **argv) {
     printf("cantInodosLibres = %d\n", sb.cantInodosLibres);
     printf("totBloques = %d\n", sb.totBloques);
     printf("totInodos = %d\n", sb.totInodos);
-    printf("\n");
     // printf("sizeof struct superbloque: %lu\n", sizeof(superbloque_t));
     // printf("sizeof struct inodo: %lu\n", sizeof(inodo_t));
-    // printf("\n");
+    printf("\n");
+
+    //Mostrar creación directorios y errores
+    mostrar_buscar_entrada("pruebas/", 1); //ERROR_CAMINO_INCORRECTO
+    mostrar_buscar_entrada("/pruebas/", 0); //ERROR_NO_EXISTE_ENTRADA_CONSULTA
+    mostrar_buscar_entrada("/pruebas/docs/", 1); //ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO
+    mostrar_buscar_entrada("/pruebas/", 1); // creamos /pruebas/
+    mostrar_buscar_entrada("/pruebas/docs/", 1); //creamos /pruebas/docs/
+    mostrar_buscar_entrada("/pruebas/docs/doc1", 1); //creamos /pruebas/docs/doc1
+    mostrar_buscar_entrada("/pruebas/docs/doc1/doc11", 1);  
+    //ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO
+    mostrar_buscar_entrada("/pruebas/", 1); //ERROR_ENTRADA_YA_EXISTENTE
+    mostrar_buscar_entrada("/pruebas/docs/doc1", 0); //consultamos /pruebas/docs/doc1
+    mostrar_buscar_entrada("/pruebas/docs/doc1", 1); //ERROR_ENTRADA_YA_EXISTENTE
+    mostrar_buscar_entrada("/pruebas/casos/", 1); //creamos /pruebas/casos/
+    mostrar_buscar_entrada("/pruebas/docs/doc2", 1); //creamos /pruebas/docs/doc2
+    printf("\n");
 
     // inodo_t inodos[BLOCKSIZE / INODOSIZE] = {};
     // for (unsigned int i = sb.posPrimerBloqueAI; i <= sb.posUltimoBloqueAI; i++) {

@@ -4,8 +4,6 @@
 **************************************************************************/
 
 #include "ficheros.h"
-#include "bloques.h"
-#include "ficheros_basico.h"
 
 /**
  * Escribir n bytes a los datos de un inodo.

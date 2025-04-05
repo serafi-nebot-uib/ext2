@@ -3,7 +3,7 @@
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
-#include "ficheros.h"
+#include "directorios.h"
 
 int main(int argc, char **argv) {
     if (argc != 4 || argv[2][0] == '-') { //Aseguramos que es un ninodo positivo

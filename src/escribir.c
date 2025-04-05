@@ -1,4 +1,9 @@
-#include "ficheros.h"
+/**************************************************************************
+* FILENAME: escribir.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
+
+#include "directorios.h"
 
 int main(int argc, char *argv[]) {
     if (argc != 4 || (argv[3][0] != '0' && argv[3][0] != '1')) {
