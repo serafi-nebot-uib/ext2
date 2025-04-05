@@ -74,7 +74,7 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
     if (leer_inodo(*p_inodo_dir, &inodo_dir) == FALLO) return FALLO;
     if (!INODE_P(inodo_dir.permisos, INODE_P_READ)) return ERROR_PERMISO_LECTURA; // comprueba que el inodo tenga permisos de lectura
 
-    entrada_t bloque_entradas[BLOCKSIZE/sizeof(entrada_t)] = {0}; 
+    entrada_t bloque_entradas[BLOCKSIZE/sizeof(entrada_t)] = {0};
 
     unsigned int cant_entradas_inodo = inodo_dir.tamEnBytesLog / sizeof(entrada_t); // calcular cantidad de entradas que contiene el inodo
     unsigned int cant_entradas_bloque = BLOCKSIZE / sizeof(entrada_t);
@@ -103,11 +103,11 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
                     if (tipo == 'd') { // es un directorio
                         // si se pretende crear el directorio, es decir, no hay nada más allá en el término final
                         // se reserva un inodo como directorio y se enlaza su índice con la entrada creada
-                        if (strcmp(final, "/") == 0 && (entrada.ninodo = reservar_inodo('d', permisos)) == FALLO) return FALLO;
-
-                        // si no es el final de la ruta y se está intentado acceder a un archivo a través de un directorio que no existe
-                        else return ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO;
-
+                        if (strcmp(final, "/") == 0) {
+                            if ((entrada.ninodo = reservar_inodo('d', permisos)) == FALLO) return FALLO;
+                        } else { // si no es el final de la ruta y se está intentado acceder a un archivo a través de un directorio que no existe
+                            return ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO;
+                        }
                     } else { // si es un fichero, se reserva un inodo como fichero y se asigna a la entrada
                         if ((entrada.ninodo = reservar_inodo('f', permisos)) == FALLO) return FALLO;
                     }
@@ -128,7 +128,7 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
     }
 
     if (strcmp(final, "") == 0 || strcmp(final, "/") == 0) { // si final está vacío o sólo tiene "/", hemos llegado al final del camino
-        if (num_entrada_inodo < cant_entradas_inodo && reservar == 1) return ERROR_ENTRADA_YA_EXISTENTE; //modo escritura y la entrada ya existe
+        if (num_entrada_inodo < cant_entradas_inodo && reservar == 1) return ERROR_ENTRADA_YA_EXISTENTE; // modo escritura y la entrada ya existe
         // cortamos la recursividad
         *p_inodo = entrada.ninodo; // asigna a *p_inodo el número de inodo del directorio o fichero creado o leido
         *p_entrada = num_entrada_inodo; // asigna a *p_entrada el número de su entrada dentro del último directorio que lo contiene
