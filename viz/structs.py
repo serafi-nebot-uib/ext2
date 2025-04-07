@@ -16,6 +16,12 @@ INODE_PTR_TABLE_SIZE = BLOCK_SIZE // sizeof(c_uint32)
 # sizeof(Inode) # TODO: this apparently yiels 112, why?
 INODE_SIZE = 128
 
+INODE_PTR_DIRECT_CNT = 12
+INODE_PTR_INDIRECT_CNT = 3
+# INODE_PTR_INDIRECT_0 = INODE_PTR_TABLE_SIZE + INODE_PTR_DIRECT
+# INODE_PTR_INDIRECT_1 = INODE_PTR_TABLE_SIZE**2 + INODE_PTR_INDIRECT_0
+# INODE_PTR_INDIRECT_2 = INODE_PTR_TABLE_SIZE**3 + INODE_PTR_INDIRECT_1
+
 class Block(c_uint8 * BLOCK_SIZE): pass # type: ignore[misc]
 class BlockPtr(c_uint32 * INODE_PTR_TABLE_SIZE): # type: ignore[misc]
   @classmethod
@@ -34,12 +40,18 @@ class Superblock(CStruct):
 class Inode(CStruct):
   _fields_: ClassVar[list[tuple[str, Any]]] = [
     ("_type", c_uint8), ("permission", c_uint8), ("atime", c_time_t), ("mtime", c_time_t), ("ctime", c_time_t),
-    ("btime", c_time_t), ("nlinks", c_uint32), ("log_size", c_uint32), ("block_cnt", c_uint32), ("_ptrs", c_uint32 * (12 + 3))
+    ("btime", c_time_t), ("nlinks", c_uint32), ("log_size", c_uint32), ("block_cnt", c_uint32),
+    ("_ptrs", c_uint32 * (INODE_PTR_DIRECT_CNT + INODE_PTR_INDIRECT_CNT))
   ]
-  @classmethod
-  def ptr_lvl(cls, idx: int) -> int: return 0 if idx < 12 else idx - 12 + 1
   @property
   def ptrs(self) -> Iterable: return [(self.ptr_lvl(i), ptr) for i, ptr in enumerate(self._ptrs)]
+
+  @classmethod
+  def ptr_lvl(cls, idx: int) -> int: return 0 if idx < INODE_PTR_DIRECT_CNT else idx - INODE_PTR_DIRECT_CNT + 1
+
+  @classmethod
+  def lptr_range(cls, lptr: int) -> int:
+    pass
 
 def inode_offset(f, ninode: int) -> int:
   f.seek(0)
@@ -52,12 +64,14 @@ def inode_ptr_tree(f, ninode: int):
 
   def ptr_tree(ptrs: Iterable[tuple[int, int]]):
     ret = []
-    for lvl, ptr in BlockPtr.valid(ptrs):
-      childs = []
-      if lvl > 0:
-        f.seek(ptr * BLOCK_SIZE)
-        childs = ptr_tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
-      ret.append({ "name": ptr, "children": childs })
+    for i, (lvl, ptr) in enumerate(ptrs):
+      print(i, lvl, ptr)
+    # for lvl, ptr in BlockPtr.valid(ptrs):
+      # childs = []
+      # if lvl > 0:
+      #   f.seek(ptr * BLOCK_SIZE)
+      #   childs = ptr_tree((lvl-1, p) for p in BlockPtr.from_buffer_copy(f.read(BLOCK_SIZE)))
+      # ret.append({ "fblock": ptr, "childs": childs })
     return ret
 
   return ptr_tree(inode.ptrs)
