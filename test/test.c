@@ -15,7 +15,7 @@
 #define DEFAULT_BLOCK_CNT 100000
 
 #define EXISTS(path) (access(path, F_OK) == 0)
-#define DELETE_IF_EXISTS(path) { if (EXISTS(path)) assert(remove(DEFAULT_DEVICE_NAME) == 0) }
+#define DELETE_IF_EXISTS(path) { if (EXISTS(path)) assert(remove(DEFAULT_DEVICE_NAME) == 0); }
 
 // TODO: file descriptors are not closed when assert fails?
 
@@ -289,6 +289,37 @@ void test_extraer_camino() {
     }
 }
 
+static char *test_buscar_entrada_entrada[] = { "pruebas/", "/pruebas/", "/pruebas/docs/", "/pruebas/", "/pruebas/docs/", "/pruebas/docs/doc1", "/pruebas/docs/doc1/doc11", "/pruebas/", "/pruebas/docs/doc1", "/pruebas/docs/doc1", "/pruebas/casos/", "/pruebas/docs/doc2" };
+static int test_buscar_entrada_reservar[] = { 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 };
+static int test_buscar_entrada_ret[] = { ERROR_CAMINO_INCORRECTO, ERROR_NO_EXISTE_ENTRADA_CONSULTA, ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO, EXITO, EXITO, EXITO, ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO, ERROR_ENTRADA_YA_EXISTENTE, EXITO, ERROR_ENTRADA_YA_EXISTENTE, EXITO, EXITO };
+
+void test_buscar_entrada() {
+    DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
+    assert(bmount(DEFAULT_DEVICE_NAME) != FALLO);
+
+    memset(buff_1, 0x00, BLOCKSIZE);
+    for (int i = 0; i < DEFAULT_BLOCK_CNT; i++) assert(bwrite(i, buff_1) != FALLO);
+    assert(initSB(DEFAULT_BLOCK_CNT, DEFAULT_BLOCK_CNT / 4) != FALLO);
+    assert(initMB() != FALLO);
+    assert(initAI() != FALLO);
+
+    int ninode = reservar_inodo('d', 07);
+    assert(ninode != FALLO);
+
+    size_t n = sizeof(test_buscar_entrada_entrada) / sizeof(*test_buscar_entrada_entrada);
+
+    for (size_t i = 0; i < n; i++) {
+        unsigned int p_inodo_dir = 0;
+        unsigned int p_inodo = 0;
+        unsigned int p_entrada = 0;
+        int ret = buscar_entrada(test_buscar_entrada_entrada[i], &p_inodo_dir, &p_inodo, &p_entrada, test_buscar_entrada_reservar[i], 6);
+        assert(ret == test_buscar_entrada_ret[i]);
+    }
+
+    assert(bumount() != FALLO);
+    DELETE_IF_EXISTS(DEFAULT_DEVICE_NAME);
+}
+
 // TODO: reservar_bloque test
 
 int main(int argc, char **argv) {
@@ -313,7 +344,8 @@ int main(int argc, char **argv) {
     //     if (leer_bit(blocks[i]) == 1) printf("%u\n", blocks[i]);
     // }
 
-    test_extraer_camino();
+    // test_extraer_camino();
+    test_buscar_entrada();
 
     return 0;
 }

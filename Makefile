@@ -2,6 +2,10 @@ CC=gcc
 CFLAGS=-c -g -Wall -std=gnu17
 #LDFLAGS=-pthread
 
+DEBUG ?= 0
+DFLAGS = -DDEBUG_LVL=$(DEBUG)
+
+
 SRC_DIR=src
 TEST_DIR=test
 BUILD_DIR=build
@@ -45,10 +49,10 @@ $(BUILD_DIR)/%: $(BUILD_DIR)/%.o $(LIBRARIES) $(INCLUDES)
 	$(CC) $(LDFLAGS) $(LIBRARIES) $< -o $@
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(INCLUDES)
-	$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) $(DFLAGS) -o $@ -c $<
 
 $(BUILD_DIR)/%.o: $(TEST_DIR)/%.c $(INCLUDES)
-	$(CC) $(CFLAGS) -I $(SRC_DIR) -o $@ -c $<
+	$(CC) $(CFLAGS) $(DFLAGS) -I $(SRC_DIR) -o $@ -c $<
 
 .PHONY: clean
 clean:
