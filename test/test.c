@@ -251,13 +251,13 @@ void test_inode_block_free() {
     inodo_t inode = {};
     assert(leer_inodo(ninode, &inode) == EXITO);
 
-    // for (unsigned int i = 0; i < 10000; i++) assert(mi_write_f(ninode, buff, i * BLOCKSIZE, BLOCKSIZE) == BLOCKSIZE);
-    // assert(leer_inodo(ninode, &inode) == EXITO);
-    // printf("inodo.numBloquesOcupados: %u\n", inode.numBloquesOcupados);
+    for (unsigned int i = 0; i < 10000; i++) assert(mi_write_f(ninode, buff, i * BLOCKSIZE, BLOCKSIZE) == BLOCKSIZE);
+    assert(leer_inodo(ninode, &inode) == EXITO);
+    printf("inodo.numBloquesOcupados: %u\n", inode.numBloquesOcupados);
 
-    int freed = liberar_bloques_inodo(0, &inode);
-    printf("inode: %d; freed: %d\n", ninode, freed);
-    assert(escribir_inodo(ninode, &inode) == EXITO);
+    // int freed = liberar_bloques_inodo(0, &inode);
+    // printf("inode: %d; freed: %d\n", ninode, freed);
+    // assert(escribir_inodo(ninode, &inode) == EXITO);
 
     // unsigned int ptr = 0;
     // int rango = obtener_nRangoBL(&inode, 9999, &ptr);
