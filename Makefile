@@ -8,18 +8,18 @@ BUILD_DIR=build
 
 # Source files from src directory
 SOURCES=$(addprefix $(SRC_DIR)/,\
-	mi_mkfs.c bloques.c ficheros_basico.c leer_sf.c ficheros.c escribir.c leer.c permitir.c helper.c truncar.c)
-	# directorios.c mi_mkdir.c mi_chmod.c mi_ls.c mi_link.c mi_escribir.c mi_cat.c mi_stat.c mi_rm.c semaforo_mutex_posix.c simulacion.c verificacion.c)
+	mi_mkfs.c bloques.c ficheros_basico.c leer_sf.c ficheros.c escribir.c leer.c permitir.c helper.c truncar.c directorios.c)
+	# mi_mkdir.c mi_chmod.c mi_ls.c mi_link.c mi_escribir.c mi_cat.c mi_stat.c mi_rm.c semaforo_mutex_posix.c simulacion.c verificacion.c)
 
 # Source files from test directory
 TEST_SOURCES=$(wildcard $(TEST_DIR)/*.c)
 
 LIBRARIES=$(addprefix $(BUILD_DIR)/,\
-	bloques.o ficheros_basico.o ficheros.o helper.o)
-	# directorios.o semaforo_mutex_posix.o)
+	bloques.o ficheros_basico.o ficheros.o helper.o directorios.o)
+	# semaforo_mutex_posix.o)
 
 INCLUDES=$(addprefix $(SRC_DIR)/,\
-	bloques.h ficheros_basico.h ficheros.h)
+	bloques.h ficheros_basico.h ficheros.h directorios.h)
 	# directorios.h semaforo_mutex_posix.h simulacion.h)
 
 PROGRAMS=$(addprefix $(BUILD_DIR)/,\

@@ -17,24 +17,26 @@
  * @return EXITO si se extrae el valor correctamente, FALLO en caso contrario
  */
 int extraer_camino(const char *camino, char *inicial, char *final, char *tipo){
-    if(camino[0] != '/') return FALLO;
+    if (camino == NULL || inicial == NULL || final == NULL || tipo == NULL) return FALLO;
+    if (camino[0] != '/') return FALLO;
     camino++;
 
     char tmp[strlen(camino) + 1]; // Se copia camino a un buffer temporal para que no de el warning al usar const char en strtok
     strcpy(tmp, camino);
-    char* token = strtok(tmp, DELIM); // Devuelve el token que precede al delimitador
+    char *token = strtok(tmp, DELIM); // Devuelve el token que precede al delimitador
 
-    char *aux;
-    if((aux = strchr(camino, DELIM[0])) == NULL || token == NULL) { // no ha encontrado ninguna '/', es un fichero
+    char *aux = NULL;
+    if ((aux = strchr(camino, DELIM[0])) == NULL || token == NULL) { // no ha encontrado ninguna '/', es un fichero
         strcpy(inicial, camino); //*inicial = *camino;
         *tipo = 'f';
         strcpy(final, "");
     } else { // ha obtenido un token antes del '/', es un directorio
         strcpy(inicial, token); //inicial = token;
         *tipo = 'd';
-        if(aux != NULL) strcpy(final, aux); // devuelve el resto del string restante, con el '/' inclusive
+        if (aux != NULL) strcpy(final, aux); // devuelve el resto del string restante, con el '/' inclusive
         else strcpy(final, "");
     }
+
     return EXITO;
 };
 
