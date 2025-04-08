@@ -64,15 +64,15 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     return size;
 }
 
-/** 
+/**
  * Lee los nbytes de los datos de un inodo a partir de un offset dado
- * 
+ *
  * @param ninodo número de inodo del que leer
  * @param buf_original buffer de datos destino; dónde se van a volcar los datos
  * @param offset número de byte del inodo del cual empezar a leer
  * @param nbytes número de bytes a escribir
  * @return número de bytes escritos, FALLO en caso de error
-*/
+ */
 int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsigned int nbytes) {
     unsigned char * dst = (unsigned char *) buf_original;
     unsigned char buff[BLOCKSIZE] = {}; // buffer de un bloque
@@ -120,7 +120,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
             // el tamaño a copiar depende del último byte a leer (el último bloque és el único caso especial)
             int size = primerBL == ultimoBL ? nbytes : BLOCKSIZE - desp1;
             memcpy(dst, &buff[desp1], size); // tamaño a leer en el primer bloque BLOCKSIZE-numBytesIgnorados(desp1)
-            index += size; 
+            index += size;
         } else if (nblogico == ultimoBL) {
             memcpy(&dst[index], &buff[0], desp2 + 1);
             index += desp2 + 1;

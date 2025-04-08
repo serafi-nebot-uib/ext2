@@ -1,21 +1,21 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <unistd.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <unistd.h>
 
 // TODO: this is not ideal, but I want clangd lsp to shut up
-#include "../src/logging.h"
 #include "../src/bloques.h"
-#include "../src/ficheros_basico.h"
-#include "../src/ficheros.h"
-#include "../src/helper.h"
 #include "../src/directorios.h"
+#include "../src/ficheros.h"
+#include "../src/ficheros_basico.h"
+#include "../src/helper.h"
+#include "../src/logging.h"
 
 #define DEFAULT_DEVICE_NAME "disco_test"
 #define DEFAULT_BLOCK_CNT 100000
 
 #define EXISTS(path) (access(path, F_OK) == 0)
-#define DELETE_IF_EXISTS(path) {if (EXISTS(path)) assert(remove(DEFAULT_DEVICE_NAME) == 0);}
+#define DELETE_IF_EXISTS(path) { if (EXISTS(path)) assert(remove(DEFAULT_DEVICE_NAME) == 0) }
 
 // TODO: file descriptors are not closed when assert fails?
 
@@ -62,49 +62,42 @@ void test_struct_size() {
 
 static unsigned int test_initSB_bs[] = { 200000, 500000, 1000000 };
 static superbloque_t test_initSB_sb[] = {
-    [0] = {
-        .posPrimerBloqueMB = 1,
-        .posUltimoBloqueMB = 25,
-        .posPrimerBloqueAI = 26,
-        .posUltimoBloqueAI = 6275,
-        .posPrimerBloqueDatos = 6276,
-        .posUltimoBloqueDatos = 199999,
-        .posInodoRaiz = 0,
-        .posPrimerInodoLibre = 0,
-        .cantBloquesLibres = 193724,
-        .cantInodosLibres = 50000,
-        .totBloques = 200000,
-        .totInodos = 50000
-    },
-    [1] = {
-        .posPrimerBloqueMB = 1,
-        .posUltimoBloqueMB = 62,
-        .posPrimerBloqueAI = 63,
-        .posUltimoBloqueAI = 15687,
-        .posPrimerBloqueDatos = 15688,
-        .posUltimoBloqueDatos = 499999,
-        .posInodoRaiz = 0,
-        .posPrimerInodoLibre = 0,
-        .cantBloquesLibres = 484312,
-        .cantInodosLibres = 125000,
-        .totBloques = 500000,
-        .totInodos = 125000
-    },
-    [2] = {
-        .posPrimerBloqueMB = 1,
-        .posUltimoBloqueMB = 123,
-        .posPrimerBloqueAI = 124,
-        .posUltimoBloqueAI = 31373,
-        .posPrimerBloqueDatos = 31374,
-        .posUltimoBloqueDatos = 999999,
-        .posInodoRaiz = 0,
-        .posPrimerInodoLibre = 0,
-        .cantBloquesLibres = 968626,
-        .cantInodosLibres = 250000,
-        .totBloques = 1000000,
-        .totInodos = 250000
-    }
-
+    [0] = {.posPrimerBloqueMB = 1,
+           .posUltimoBloqueMB = 25,
+           .posPrimerBloqueAI = 26,
+           .posUltimoBloqueAI = 6275,
+           .posPrimerBloqueDatos = 6276,
+           .posUltimoBloqueDatos = 199999,
+           .posInodoRaiz = 0,
+           .posPrimerInodoLibre = 0,
+           .cantBloquesLibres = 193724,
+           .cantInodosLibres = 50000,
+           .totBloques = 200000,
+           .totInodos = 50000},
+    [1] = {.posPrimerBloqueMB = 1,
+           .posUltimoBloqueMB = 62,
+           .posPrimerBloqueAI = 63,
+           .posUltimoBloqueAI = 15687,
+           .posPrimerBloqueDatos = 15688,
+           .posUltimoBloqueDatos = 499999,
+           .posInodoRaiz = 0,
+           .posPrimerInodoLibre = 0,
+           .cantBloquesLibres = 484312,
+           .cantInodosLibres = 125000,
+           .totBloques = 500000,
+           .totInodos = 125000},
+    [2] = {.posPrimerBloqueMB = 1,
+           .posUltimoBloqueMB = 123,
+           .posPrimerBloqueAI = 124,
+           .posUltimoBloqueAI = 31373,
+           .posPrimerBloqueDatos = 31374,
+           .posUltimoBloqueDatos = 999999,
+           .posInodoRaiz = 0,
+           .posPrimerInodoLibre = 0,
+           .cantBloquesLibres = 968626,
+           .cantInodosLibres = 250000,
+           .totBloques = 1000000,
+           .totInodos = 250000}
 };
 
 void test_init_fs() {
@@ -163,7 +156,7 @@ void test_reservar_bloque() {
     for (unsigned int i = 0; i < sizeof(blocks) / sizeof(*blocks); i++) {
         blocks[i] = reservar_bloque();
         assert(blocks[i] != FALLO);
-        if (i > 0) assert(blocks[i-1]+1 == blocks[i]);
+        if (i > 0) assert(blocks[i - 1] + 1 == blocks[i]);
     }
 
     for (unsigned int i = 0; i < sizeof(blocks) / sizeof(*blocks); i++) {
@@ -222,7 +215,7 @@ void test_read_write() {
     // const unsigned int start = 9000 + 9000 % 16;
     // const unsigned int size = 3571;
 
-    unsigned char *buff = (unsigned char *) malloc(size);
+    unsigned char *buff = (unsigned char *)malloc(size);
     assert(buff != NULL);
     memset(buff, 0x41, size);
 
@@ -274,7 +267,7 @@ void test_inode_block_free() {
     assert(bumount() != FALLO);
 }
 
-static char *test_extraer_camino_camino[]  = { "/dir1/dir2/fichero", "/dir/", "/fichero" };
+static char *test_extraer_camino_camino[] = { "/dir1/dir2/fichero", "/dir/", "/fichero" };
 static char *test_extraer_camino_inicial[] = { "dir1", "dir", "fichero" };
 static char *test_extraer_camino_final[] = { "/dir2/fichero", "/", "" };
 static char test_extraer_camino_tipo[] = { 'd', 'd', 'f' };
@@ -310,7 +303,8 @@ int main(int argc, char **argv) {
     // test_read_write();
 
     // assert(bmount("disco") != FALLO);
-    // unsigned int blocks[] = { 3139, 3140, 3141, 3142, 3143, 3144, 3145, 3146, 3147, 3148, 3149, 3150, 3151, 3152, 3153, 3154, 3155, 3156, 3157, 3158, 3159, 3160, 3161, 3162, 3163, 3164, 3165, 3166, 3167, 3168, 3169, 3170, 3171 };
+    // unsigned int blocks[] = { 3139, 3140, 3141, 3142, 3143, 3144, 3145, 3146, 3147, 3148, 3149, 3150, 3151, 3152, 3153, 3154, 3155, 3156, 3157, 3158, 3159, 3160, 3161, 3162, 3163, 3164, 3165, 3166,
+    // 3167, 3168, 3169, 3170, 3171 };
 
     // test_inode_block_free();
 

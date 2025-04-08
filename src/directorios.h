@@ -19,8 +19,8 @@
 #define ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO (-8)
 
 typedef struct  {
-  char nombre[TAMNOMBRE]; //Este campo nombre no incluye la ruta (ni el carácter de separación '/'). 
-  unsigned int ninodo;
+    char nombre[TAMNOMBRE]; //Este campo nombre no incluye la ruta (ni el carácter de separación '/').
+    unsigned int ninodo;
 } entrada_t;
 
 int extraer_camino(const char *camino, char *inicial, char *final, char *tipo);

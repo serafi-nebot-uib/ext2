@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     unsigned int offset = 0;
 
     // lectura secuencial del fichero (simula el comportamiento del comando "cat") se lee bloque a bloque hasta que mi_read_f() retorne 0 (EOF)
-   while ((leidos = mi_read_f(ninodo, buffer, offset, TAM_BUFFER)) > 0) {
+    while ((leidos = mi_read_f(ninodo, buffer, offset, TAM_BUFFER)) > 0) {
         if (write(fileno(stdout), buffer, leidos) < 0) {
             ERRSYS("write");
             break;

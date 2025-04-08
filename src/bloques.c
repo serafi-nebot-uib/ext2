@@ -20,7 +20,7 @@ static int fd = 0;
 int bmount(const char *camino) {
     int ret = FALLO; // contiene el valor de retorno
     // se cambia la máscara de creación de ficheros a 000 para que se permita qualquier tipo de modo
-    // esto es necesario ya que en algunos sistemas la máscara por defecto = 0022, 
+    // esto es necesario ya que en algunos sistemas la máscara por defecto = 0022,
     // lo que significa que si creamos un fichero en modo 0666 se va a crear en modo:
     //      0666 & ~0022 = 0b110110110 & ~0b000010010
     //                   = 0b110110110 &  0b111101101
@@ -28,11 +28,8 @@ int bmount(const char *camino) {
     //                   = 0644
     mode_t mask = umask(000);
     // abrir/crear el fichero con los permisos por defecto (FILE_MODE)
-    if ((fd = open(camino, O_RDWR | O_CREAT, FILE_MODE)) < 0) {
-        ERRSYS("open");
-    } else {
-        ret = fd;
-    }
+    if ((fd = open(camino, O_RDWR | O_CREAT, FILE_MODE)) < 0) ERRSYS("open");
+    else ret = fd;
     umask(mask); // restaurar la antigua mascara de creación
     return ret;
 }
@@ -57,7 +54,7 @@ int bumount() {
  */
 int bwrite(unsigned int nbloque, const void *buf) {
     // desplaza el cursor del archivo hasta el primer byte del bloque especificado (nbloque ∗ BLOCKSIZE)
-    if (lseek(fd, nbloque*BLOCKSIZE, SEEK_SET) < 0) {
+    if (lseek(fd, nbloque * BLOCKSIZE, SEEK_SET) < 0) {
         ERRSYS("lseek");
         return FALLO;
     }
