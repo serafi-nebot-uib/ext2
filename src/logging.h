@@ -33,14 +33,15 @@
         }                                                                       \
     } while (0)
 
-#define DEBUG(lvl, ...)                                                         \
+#define DEBUG(lvl, ...) {                                                       \
     do {                                                                        \
         if (lvl <= DEBUG_LVL) {                                                 \
             fprintf(DEBUG_OUTPUT, GRAY "%s\t%d: " RESET, __func__, __LINE__);   \
             fprintf(DEBUG_OUTPUT, __VA_ARGS__);                                 \
             fprintf(DEBUG_OUTPUT, "\n");                                        \
         }                                                                       \
-    } while (0)
+    } while (0)                                                                 \
+}
 #endif
 
 #define ERROR(...)                                                              \

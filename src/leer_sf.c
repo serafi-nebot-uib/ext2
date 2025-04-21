@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     // printf("sizeof struct inodo: %lu\n", sizeof(inodo_t));
     printf("\n");
 
-    //Mostrar creación directorios y errores
+    // Mostrar creación directorios y errores
     mostrar_buscar_entrada("pruebas/", 1); //ERROR_CAMINO_INCORRECTO
     mostrar_buscar_entrada("/pruebas/", 0); //ERROR_NO_EXISTE_ENTRADA_CONSULTA
     mostrar_buscar_entrada("/pruebas/docs/", 1); //ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO

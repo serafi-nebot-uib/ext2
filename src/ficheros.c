@@ -4,6 +4,9 @@
 **************************************************************************/
 
 #include "ficheros.h"
+#include "bloques.h"
+
+#include "helper.h"
 
 /**
  * Escribir n bytes a los datos de un inodo.
@@ -23,7 +26,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         return FALLO;
     }
 
-    unsigned char * const src = (unsigned char *) buf_original; // puntero al buffer de origen
+    unsigned char *const src = (unsigned char *) buf_original;  // puntero al buffer de origen
     unsigned char dst[BLOCKSIZE] = {}; // puntero al buffer de destino (se usa como buffer temporal para leer el bloque, modificar los datos y escribir)
 
     const unsigned int start = offset; // número de byte al que empezar a escribir
@@ -74,7 +77,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
  * @return número de bytes escritos, FALLO en caso de error
  */
 int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsigned int nbytes) {
-    unsigned char * dst = (unsigned char *) buf_original;
+    unsigned char *dst = (unsigned char *)buf_original;
     unsigned char buff[BLOCKSIZE] = {}; // buffer de un bloque
 
     inodo_t inodo = {};
@@ -91,49 +94,26 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     // pretende leer más allá de EOF, leemos sólo los bytes que podemos desde el offset hasta EOF
     if ((offset + nbytes) >= inodo.tamEnBytesLog) nbytes = inodo.tamEnBytesLog - offset;
 
-    // offset: posición inicial en bytes
-    int ultimoByteLogico = offset + nbytes - 1;
-    int primerBL = offset / BLOCKSIZE; // primer bloque lógico
-    int ultimoBL = ultimoByteLogico / BLOCKSIZE; // último bloque lógico
-    int desp1 = offset % BLOCKSIZE; // bytes de offset, desplazamiento dentro del bloque INICIAL
-    int desp2 = ultimoByteLogico % BLOCKSIZE; // bytes de offset, desplazamiento dentro del ÚLTIMO bloque
+    const unsigned int start = offset, end = offset + nbytes;
+    const unsigned int bstart = start / BLOCKSIZE, bend = end / BLOCKSIZE;
+    const unsigned int end_off = end % BLOCKSIZE;
 
-    DEBUG(3, "ultimoByteLogico: %d", ultimoByteLogico);
-    DEBUG(3, "primerBL: %d", primerBL);
-    DEBUG(3, "ultimoBL: %d", ultimoBL);
-    DEBUG(3, "desp1: %d", desp1);
-    DEBUG(3, "desp2: %d", desp2);
-
-    int nbfisico;
-    unsigned int index = 0; // bytes copiados, controla donde se escriben en el array buf_original los datos leídos en cada iteracion
-
-    for (unsigned int nblogico = primerBL; nblogico <= ultimoBL; nblogico++) {
-        if ((nbfisico = traducir_bloque_inodo(ninodo, nblogico, 0)) == FALLO) { // consigue el bfisico asociado al blogico
-            index += BLOCKSIZE; // si no existe el bloque físico asociado al blogico, incrementa el contador
-            continue;           // y salta a la siguiente iteración
+    int bn = 0;
+    unsigned int idx = 0, size = 0;
+    for (unsigned int i = bstart; i <= bend; i++) {
+        unsigned int off = (offset + idx) % BLOCKSIZE;
+        if ((size = (i == bend ? end_off : BLOCKSIZE) - off) == 0) break;
+        if ((bn = traducir_bloque_inodo(ninodo, i, 0)) != FALLO) {
+            if (bread(bn, buff) == FALLO) return FALLO;
+            memcpy(&dst[idx], &buff[off], size);
         }
-
-        // lee el bloque físico
-        if (bread(nbfisico, buff) == FALLO) return FALLO;
-
-        if (nblogico == primerBL) { // si es la 1era iteración
-            // el tamaño a copiar depende del último byte a leer (el último bloque és el único caso especial)
-            int size = primerBL == ultimoBL ? nbytes : BLOCKSIZE - desp1;
-            memcpy(dst, &buff[desp1], size); // tamaño a leer en el primer bloque BLOCKSIZE-numBytesIgnorados(desp1)
-            index += size;
-        } else if (nblogico == ultimoBL) {
-            memcpy(&dst[index], &buff[0], desp2 + 1);
-            index += desp2 + 1;
-        } else { // si es un bloque intermedio (no es ni el primer bloque ni el último, por tanto no hay offset)
-            memcpy(&dst[index], &buff, BLOCKSIZE); // copia el bloque entero leído en buf_original
-            index += BLOCKSIZE;
-        }
+        idx += size;
     }
 
     inodo.atime = time(NULL); // actualiza la fecha de último acceso al inodo
     if (escribir_inodo(ninodo, &inodo) == FALLO) return FALLO;
 
-    return index;
+    return idx;
 }
 
 /**

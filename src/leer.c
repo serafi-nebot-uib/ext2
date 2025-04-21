@@ -4,8 +4,10 @@
 **************************************************************************/
 
 #include "directorios.h"
+#include "helper.h"
 
 #define TAM_BUFFER (BLOCKSIZE * 2)
+// #define TAM_BUFFER 1500
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
@@ -28,6 +30,7 @@ int main(int argc, char *argv[]) {
 
     // lectura secuencial del fichero (simula el comportamiento del comando "cat") se lee bloque a bloque hasta que mi_read_f() retorne 0 (EOF)
     while ((leidos = mi_read_f(ninodo, buffer, offset, TAM_BUFFER)) > 0) {
+        // hexdump_col(buffer, 0, leidos, offset, 32, 8);
         if (write(fileno(stdout), buffer, leidos) < 0) {
             ERRSYS("write");
             break;

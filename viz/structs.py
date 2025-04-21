@@ -114,6 +114,6 @@ def block_map(f):
 
 if __name__ == "__main__":
   with Path("disco").open("rb") as f:
-    print(inode_ptr_tree(f, 0))
+    print(inode_ptr_tree(f, 1))
     # inodes(f)
     # block_map(f)
