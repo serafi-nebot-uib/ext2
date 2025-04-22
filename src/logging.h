@@ -10,10 +10,6 @@
 
 #include "colors.h"
 
-#ifndef DEBUG_EN
-#define DEBUG_EN 1
-#endif
-
 #ifndef DEBUG_OUTPUT
 #define DEBUG_OUTPUT stderr
 #endif
@@ -23,39 +19,42 @@
 #endif
 
 #if DEBUG_LVL == 0
-#define DEBUG(lvl, ...) {}
-#define DEBUG_RAW(lvl, ...) {}
+#define DEBUG(lvl, ...) ({})
+#define DEBUG_RAW(lvl, ...) ({})
 #else
-#define DEBUG_RAW(lvl, ...)                                                     \
+#define DEBUG_RAW(lvl, ...) ({                                                  \
     do {                                                                        \
         if (lvl <= DEBUG_LVL) {                                                 \
             fprintf(DEBUG_OUTPUT, __VA_ARGS__);                                 \
         }                                                                       \
-    } while (0)
+    } while (0);                                                                \
+})
 
-#define DEBUG(lvl, ...) {                                                       \
+#define DEBUG(lvl, ...) ({                                                      \
     do {                                                                        \
         if (lvl <= DEBUG_LVL) {                                                 \
             fprintf(DEBUG_OUTPUT, GRAY "%s\t%d: " RESET, __func__, __LINE__);   \
             fprintf(DEBUG_OUTPUT, __VA_ARGS__);                                 \
             fprintf(DEBUG_OUTPUT, "\n");                                        \
         }                                                                       \
-    } while (0)                                                                 \
-}
+    } while (0);                                                                \
+})
 #endif
 
-#define ERROR(...)                                                              \
+#define ERROR(...) ({                                                           \
     do {                                                                        \
         fprintf(stderr, RED "error: " RESET);                                   \
         fprintf(stderr, __VA_ARGS__);                                           \
         fprintf(stderr, "\n");                                                  \
-    } while (0)
+    } while (0);                                                                \
+})
 
-#define ERRSYS(name)                                                            \
+#define ERRSYS(name) ({                                                         \
     do {                                                                        \
         fprintf(stderr, BOLD RED "%s→" name "(): " RESET RED "%s\n" RESET,      \
                 __func__, strerror(errno));                                     \
-    } while (0)
+    } while (0);                                                                \
+})
 
 // devuelve un string con el valor binario de n, se usa en los mensajes de debug para imprimir un número en formato binario
 #define BIN_STR8(n) ({ \

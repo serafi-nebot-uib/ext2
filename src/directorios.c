@@ -159,3 +159,15 @@ void mostrar_error_buscar_entrada(int error) {
     case ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO: fprintf(stderr, RED "Error: No es un directorio.\n" RESET); break;
     }
 }
+
+/**
+ * Crea un archivo o directorio y sus directorios padres
+ *
+ * @param camino ruta al archivo/directorio a crear
+ * @param permisos permisos con los que crear el archivo/directorio
+ * @return valor entero que representa el tipo de salida de la función, error o éxito
+*/
+int mi_creat(const char *camino, unsigned char permisos) {
+    unsigned int p_inodo_dir = 0, p_inodo = 0, p_entrada = 0;
+    return buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 1, permisos);
+}
