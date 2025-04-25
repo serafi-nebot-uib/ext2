@@ -10,6 +10,8 @@
 
 #include <time.h>
 
+#define TMSP_FMT "%a %Y-%m-%d %H:%M:%S" 
+
 typedef struct STAT {
     unsigned char tipo;                     // tipo ('l':libre, 'd':directorio o 'f':fichero)
     unsigned char permisos;                 // permisos (lectura y/o escritura y/o ejecución)

@@ -11,19 +11,24 @@ int main(int argc, char **argv) {
         return FALLO;
     }
 
-    const char * nombre_dispositivo = argv[1];
-    unsigned int ninodo = atoi(argv[2]);
-    unsigned char permisos = atoi(argv[3]);
+    const char *const dev_name = argv[1];
+    const unsigned int ninodo = atoi(argv[2]);
+    const unsigned char perm = atoi(argv[3]);
 
-    if (bmount(nombre_dispositivo) == FALLO) {
-        fprintf(stderr, "error al montar el dispositivo virtual %s\n", nombre_dispositivo);
+    if (perm > 7) {
+        ERROR("permisos %hhu incorrectos; debe ser un valor 0-7", perm);
         return FALLO;
     }
 
-    if (mi_chmod_f(ninodo, permisos) == FALLO) return FALLO;
+    if (bmount(dev_name) == FALLO) {
+        ERROR("no se ha podido montar el dispositivo virtual %s", dev_name);
+        return FALLO;
+    }
+
+    if (mi_chmod_f(ninodo, perm) == FALLO) return FALLO;
 
     if (bumount() == FALLO) {
-        fprintf(stderr, "error al desmontar el dispositivo virtual %s\n", nombre_dispositivo);
+        ERROR("no se ha podido desmontar el dispositivo virtual %s", dev_name);
         return FALLO;
     }
 

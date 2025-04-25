@@ -7,22 +7,22 @@
 
 int main(int argc, char **argv) {
     if (argc != 3) {
-        fprintf(stderr, BOLD "uso: " RESET "%s <nombre_dispositivo> <nbloques>\n", argv[0]);
+        fprintf(stderr, BOLD "sintaxis: " RESET "%s <nombre_dispositivo> <nbloques>\n", argv[0]);
         return FALLO;
     }
 
-    const char *nombre_dispositivo = argv[1];
-    int nbloques = atoi(argv[2]);
+    const char *const dev_name = argv[1];
+    const int block_cnt = atoi(argv[2]);
 
-    if (bmount(nombre_dispositivo) == FALLO) {
-        fprintf(stderr, "error al montar el dispositivo virtual %s\n", nombre_dispositivo);
+    if (bmount(dev_name) == FALLO) {
+        ERROR("no se ha podido montar el dispositivo virtual %s", dev_name);
         return FALLO;
     }
 
     unsigned char buffer[BLOCKSIZE];
     memset(buffer, 0, BLOCKSIZE);
 
-    for (int i = 0; i < nbloques; i++) {
+    for (int i = 0; i < block_cnt; i++) {
         if (bwrite(i, buffer) == FALLO) {
             fprintf(stderr, "error al escribir el bloque %d\n", i);
             bumount();
@@ -31,12 +31,10 @@ int main(int argc, char **argv) {
     }
 
     int ret = EXITO;
-
-    if (initSB(nbloques, nbloques/4) == FALLO || initMB() == FALLO || initAI() == FALLO || reservar_inodo('d', 7) == FALLO)
-        ret = FALLO;
+    if (initSB(block_cnt, block_cnt / 4) == FALLO || initMB() == FALLO || initAI() == FALLO || reservar_inodo('d', 7) == FALLO) ret = FALLO;
 
     if (bumount() == FALLO) {
-        fprintf(stderr, "error al desmontar el dispositivo virtual %s\n", nombre_dispositivo);
+        ERROR("no se ha podido desmontar el dispositivo virtual %s", dev_name);
         return FALLO;
     }
 

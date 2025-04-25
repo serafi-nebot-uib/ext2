@@ -22,9 +22,9 @@ int main(int argc, char **argv) {
         return FALLO;
     }
 
-    const char *nombre_dispositivo = argv[1];
-    if (bmount(nombre_dispositivo) == FALLO) {
-        fprintf(stderr, "error al montar el dispositivo virtual %s\n", nombre_dispositivo);
+    const char *dev_name = argv[1];
+    if (bmount(dev_name) == FALLO) {
+        ERROR("no se ha podido montar el dispositivo virtual %s", dev_name);
         return FALLO;
     }
 
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
     // printf("sb.posPrimerInodoLibre: %u\n", sb.posPrimerInodoLibre);
 
     if (bumount() == FALLO) {
-        fprintf(stderr, "error al desmontar el dispositivo virtual %s\n", nombre_dispositivo);
+        ERROR("no se ha podido desmontar el dispositivo virtual %s", dev_name);
         return FALLO;
     }
 

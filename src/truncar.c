@@ -8,16 +8,16 @@
 int main(int argc, char *argv[]) {
     if (argc != 4) {
         fprintf(stderr, "sintaxis: %s <nombre_dispositivo> <ninodo> <nbytes>\n", argv[0]);
-        return 1;
+        return FALLO;
     }
 
-    const char *nombre_dispositivo = argv[1];
-    unsigned int ninodo = atoi(argv[2]);
-    unsigned int nbytes = atoi(argv[3]);
+    const char *const dev_name = argv[1];
+    const unsigned int ninodo = atoi(argv[2]);
+    const unsigned int nbytes = atoi(argv[3]);
 
-    if (bmount(nombre_dispositivo) == FALLO) {
-        ERROR("no se ha podido montar el dispositivo: \"%s\"", nombre_dispositivo);
-        return 1;
+    if (bmount(dev_name) == FALLO) {
+        ERROR("no se ha podido montar el dispositivo: \"%s\"", dev_name);
+        return FALLO;
     }
 
     int liberados;
@@ -26,14 +26,14 @@ int main(int argc, char *argv[]) {
         liberados = liberar_inodo(ninodo);
         if (liberados == FALLO) {
             ERROR("no se ha podido liberar el inodo: %u", ninodo);
-            return 1;
+            return FALLO;
         }
     } else {
         // si nbytes > 0, se trunca el fichero a nbytes
         liberados = mi_truncar_f(ninodo, nbytes);
         if (liberados == FALLO) {
             ERROR("no se ha podido truncar el inodo: %u", ninodo);
-            return 1;
+            return FALLO;
         }
     }
 
@@ -49,19 +49,19 @@ int main(int argc, char *argv[]) {
         char time_str[32] = {};
 
         ts = localtime(&stat.atime);
-        strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+        strftime(time_str, sizeof(time_str), TMSP_FMT, ts);
         printf("atime: %s\n", time_str);
 
         ts = localtime(&stat.mtime);
-        strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+        strftime(time_str, sizeof(time_str), TMSP_FMT, ts);
         printf("mtime: %s\n", time_str);
 
         ts = localtime(&stat.ctime);
-        strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+        strftime(time_str, sizeof(time_str), TMSP_FMT, ts);
         printf("ctime: %s\n", time_str);
 
         ts = localtime(&stat.btime);
-        strftime(time_str, sizeof(time_str), "%a %Y-%m-%d %H:%M:%S", ts);
+        strftime(time_str, sizeof(time_str), TMSP_FMT, ts);
         printf("btime: %s\n", time_str);
 
         printf("nlinks: %u\n", stat.nlinks);
@@ -71,9 +71,9 @@ int main(int argc, char *argv[]) {
 
 
     if (bumount() == FALLO) {
-        ERROR("no se ha podido desmontar el dispositivo: \"%s\"", nombre_dispositivo);
-        return 1;
+        ERROR("no se ha podido desmontar el dispositivo: \"%s\"", dev_name);
+        return FALLO;
     }
 
-    return 0;
+    return EXITO;
 }

@@ -1,6 +1,6 @@
 /**************************************************************************
-* FILENAME: mi_mkfs.c
-* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+* filename: mi_mkdir.c
+* author: serafí nebot, ignasi paredes, jaume galmés
 **************************************************************************/
 
 #include "directorios.h"
@@ -12,21 +12,31 @@ int main(int argc, char **argv) {
     }
 
     const char *const dev_name = argv[1];
-    const char perm = argv[2][0];
+    const unsigned char perm = atoi(argv[2]);
     const char *const path = argv[3];
 
-    if (bmount(dev_name) == FALLO) {
-        fprintf(stderr, "error al montar el dispositivo virtual %s\n", dev_name);
+    if (perm > 7) {
+        ERROR("permisos %hhu incorrectos; debe ser un valor 0-7", perm);
         return FALLO;
-    } else DEBUG(7, "test");
+    }
+
+    if (path[strlen(path) - 1] != '/') {
+        ERROR("la ruta debe terminar en '/'");
+        return FALLO;
+    }
+
+    if (bmount(dev_name) == FALLO) {
+        ERROR("no se ha podido montar el dispositivo virtual %s", dev_name);
+        return FALLO;
+    }
 
     int ret = mi_creat(path, perm);
     if (ret != 0) mostrar_error_buscar_entrada(ret);
 
     if (bumount() == FALLO) {
-        fprintf(stderr, "error al desmontar el dispositivo virtual %s\n", dev_name);
+        ERROR("no se ha podido desmontar el dispositivo virtual %s", dev_name);
         return FALLO;
     }
 
-    return 0;
+    return ret;
 }
