@@ -258,7 +258,6 @@ int mi_dir(const char *camino, char *buffer, char flag) {
 
     // allow listing single files
     if (inode.tipo != 'd') {
-        char inicial[TAMNOMBRE];
         char final[strlen(camino)];
         if (extraer_camino_final(camino, final) == FALLO) return FALLO;
         mi_dir_entrada(final, &inode, buffer, flag);
@@ -312,4 +311,51 @@ int mi_stat(const char *camino, stat_t *p_stat) {
     DEBUG(2, "p_entrada: %u", p_entrada);
 
     return mi_stat_f(p_inodo, p_stat) == EXITO ? p_inodo : FALLO;
+}
+
+// TODO: implement cache system for bonus points
+
+/**
+ * Escribir n bytes a los datos de un inodo.
+ *
+ * @param ninodo número de inodo al que escribir
+ * @param buf_original buffer de datos origen; de dónde se van a volcar los datos
+ * @param offset número de byte del inodo del cual empezar a escribir
+ * @param nbytes número de bytes a escribir
+ * @return número de bytes escritos, FALLO en caso de error
+ */
+int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes) {
+    superbloque_t sb;
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+
+    unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
+    int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
+    if (ret > 0) {
+        mostrar_error_buscar_entrada(ret);
+        return ret;
+    }
+
+    DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
+    DEBUG(2, "p_inodo: %u", p_inodo);
+    DEBUG(2, "p_entrada: %u", p_entrada);
+
+    return mi_write_f(p_inodo, buf, offset, nbytes);
+}
+
+int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes) {
+    superbloque_t sb;
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+
+    unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
+    int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
+    if (ret > 0) {
+        mostrar_error_buscar_entrada(ret);
+        return ret;
+    }
+
+    DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
+    DEBUG(2, "p_inodo: %u", p_inodo);
+    DEBUG(2, "p_entrada: %u", p_entrada);
+
+    return mi_read_f(p_inodo, buf, offset, nbytes);
 }
