@@ -74,7 +74,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
  * @param buf_original buffer de datos destino; dónde se van a volcar los datos
  * @param offset número de byte del inodo del cual empezar a leer
  * @param nbytes número de bytes a escribir
- * @return número de bytes escritos, FALLO en caso de error
+ * @return número de bytes leídos, FALLO en caso de error
  */
 int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsigned int nbytes) {
     unsigned char *dst = (unsigned char *)buf_original;

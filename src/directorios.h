@@ -37,5 +37,6 @@ int mi_chmod(const char *camino, unsigned char permisos);
 int mi_stat(const char *camino, stat_t *p_stat);
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes);
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes);
+int mi_link(const char *camino1, const char *camino2);
 
 #endif

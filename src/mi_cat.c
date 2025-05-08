@@ -8,7 +8,7 @@
 #define TAM_BUFFER (BLOCKSIZE * 2)
 
 int main(int argc, char *argv[]) {
-    if (argc < 5) {
+    if (argc < 3) {
         fprintf(stderr, BOLD "sintaxis: " RESET "%s <disco> </ruta_fichero>\n", argv[0]);
         return FALLO;
     }
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
         ret = FALLO;
     } else {
         if (stat.tipo != 'f') {
-            ERROR("\"%s\" no es un fichero", ruta);
+            ERROR("\"%s\" (%c) no es un fichero", ruta, stat.tipo);
             ret = FALLO;
         } else {
             unsigned char buffer[TAM_BUFFER] = { 0 };
