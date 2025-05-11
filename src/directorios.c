@@ -3,6 +3,8 @@
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
+//Comentario prueba git
+
 #include "directorios.h"
 #include "ficheros_basico.h"
 
