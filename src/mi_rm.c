@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
         return FALLO;
     }
 
-    int ret = EXITO;
+    int ret = mi_unlink(ruta);
 
     if (bumount() == FALLO) {
         ERROR("no se ha podido desmontar el dispositivo: %s", nombre_dispositivo);

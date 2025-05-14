@@ -51,6 +51,7 @@ int main(int argc, char *argv[]) {
                 offset += leidos;
                 memset(buffer, 0, TAM_BUFFER);
             }
+            printf("\n\nTotal_leidos %d", total_leidos);
         }
     }
 

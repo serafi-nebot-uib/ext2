@@ -43,9 +43,9 @@
 
 #define ERROR(...) ({                                                           \
     do {                                                                        \
-        fprintf(stderr, RED "error: " RESET);                                   \
+        fprintf(stderr, RED "Error: " RESET);                                   \
         fprintf(stderr, __VA_ARGS__);                                           \
-        fprintf(stderr, "\n");                                                  \
+        fprintf(stderr, ".\n");                                                  \
     } while (0);                                                                \
 })
 

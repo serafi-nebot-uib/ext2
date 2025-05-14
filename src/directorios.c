@@ -164,13 +164,13 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
 void mostrar_error_buscar_entrada(int error) {
     // fprintf(stderr, "Error: %d\n", error);
     switch (error) {
-    case ERROR_CAMINO_INCORRECTO:                       ERROR("camino incorrecto"); break;
-    case ERROR_PERMISO_LECTURA:                         ERROR("permiso denegado de lectura"); break;
-    case ERROR_NO_EXISTE_ENTRADA_CONSULTA:              ERROR("no existe el archivo o el directorio"); break;
-    case ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO:         ERROR("no existe algún directorio intermedio"); break;
-    case ERROR_PERMISO_ESCRITURA:                       ERROR("permiso denegado de escritura"); break;
-    case ERROR_ENTRADA_YA_EXISTENTE:                    ERROR("el archivo ya existe"); break;
-    case ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO: ERROR("no es un directorio"); break;
+    case ERROR_CAMINO_INCORRECTO:                       ERROR("Camino incorrecto"); break;
+    case ERROR_PERMISO_LECTURA:                         ERROR("Permiso denegado de lectura"); break;
+    case ERROR_NO_EXISTE_ENTRADA_CONSULTA:              ERROR("No existe el archivo o el directorio"); break;
+    case ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO:         ERROR("No existe algún directorio intermedio"); break;
+    case ERROR_PERMISO_ESCRITURA:                       ERROR("Permiso denegado de escritura"); break;
+    case ERROR_ENTRADA_YA_EXISTENTE:                    ERROR("El archivo ya existe"); break;
+    case ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO: ERROR("No es un directorio"); break;
     }
 }
 
@@ -211,7 +211,7 @@ void mi_dir_entrada(const char *const nombre, inodo_t *inode, char *buffer, char
         strcat(buffer, INODE_P(inode->permisos, INODE_P_READ) ? "r" : "-");
         strcat(buffer, INODE_P(inode->permisos, INODE_P_WRITE) ? "w" : "-");
         strcat(buffer, INODE_P(inode->permisos, INODE_P_EXECUTE) ? "x" : "-");
-        strcat(buffer, "\t\t");
+        strcat(buffer, "\t");
         struct tm *tm;
         tm = localtime(&inode->mtime);
         sprintf(tmp, "%d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min,  tm->tm_sec);
@@ -231,6 +231,13 @@ void mi_dir_entrada(const char *const nombre, inodo_t *inode, char *buffer, char
     }
 }
 
+/**
+ * Función que devuelve un  buffer el contenido de un directorio pasado por parámetro
+ *
+ * @param camino ruta del directorio a imprimir
+ * @param buffer posición de memoria donde se almacena el contenido de un directorio
+ * @param flag permite seleccionar el formato de impresión
+ */
 int mi_dir(const char *camino, char *buffer, char flag) {
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
@@ -248,9 +255,18 @@ int mi_dir(const char *camino, char *buffer, char flag) {
     if (!INODE_P(inode.permisos, INODE_P_READ)) return ERROR_PERMISO_LECTURA;
 
     char line[TAMFILA] = { 0 };
+    size_t n = inode.tamEnBytesLog / sizeof(entrada_t);
 
-    if (flag) {
-        strcat(buffer, "tipo\tpermisos\tmtime\t\t\ttamaño\tnombre\n");
+    if (inode.tipo == 'd') {
+        strcat(buffer, "Total: ");
+        char tmp[8] = {0};
+        sprintf(tmp, "%lu", n);
+        strcat(buffer, tmp);
+        strcat(buffer, "\n");
+    }
+
+    if ((flag && n > 0) || inode.tipo != 'd') {
+        strcat(buffer, "Tipo\tModo\tmTime\t\t\tTamaño\tNombre\n");
         memset(line, '-', TAMFILA);
         line[64 - 1] = 0;
         line[64 - 2] = '\n';
@@ -265,10 +281,10 @@ int mi_dir(const char *camino, char *buffer, char flag) {
         return 1;
     }
 
-    size_t n = inode.tamEnBytesLog / sizeof(entrada_t);
+    //TODO: mirar mem quina funció és sa que fa que s'imprimeixin es dos inodes 0
     entrada_t entradas[ENTRADAS_IN_BLOCK];
     if (mi_read_f(p_inodo, entradas, 0, BLOCKSIZE) == FALLO) return FALLO;
-    for (size_t i = 0; i < n; i++) {
+    for (size_t i = 0; i <= n + 1; i++) {
         DEBUG(1, "entrada %zu -> ninodo: %u; nombre: %s", i, entradas[i].ninodo, entradas[i].nombre);
         if (leer_inodo(entradas[i].ninodo, &inode) == FALLO) return FALLO;
         mi_dir_entrada(entradas[i].nombre, &inode, buffer, flag);
@@ -412,5 +428,125 @@ int mi_link(const char *camino1, const char *camino2) {
     return EXITO;
 }
 
+/**
+ * Función que borra la entrada de directorio especificada
+ *
+ * @param camino ruta del directorio/fichero a borrar
+ * @return EXITO si se borra correctamente, código de error en caso contrario
+ */
 int mi_unlink(const char *camino) {
+    superbloque_t sb;
+    if (bread(posSB, &sb) == FALLO) return FALLO;
+
+    unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
+    int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
+    if (ret < 0) {
+        mostrar_error_buscar_entrada(ret);
+        return ret;
+    }
+
+    DEBUG(1, "p_inodo_dir: %u", p_inodo_dir);
+    DEBUG(1, "p_inodo: %u", p_inodo);
+    DEBUG(1, "p_entrada: %u", p_entrada);
+
+    inodo_t inodo, inodo_dir;
+    if (leer_inodo(p_inodo, &inodo) == FALLO) return FALLO;
+    if (inodo.tipo == 'd' && inodo.tamEnBytesLog > 0) {
+        ERROR("El directorio %s no está vacío", camino);
+        return FALLO; // Si se trata de un directorio y no está vacío entonces no se puede borrar
+    }
+    //if (!INODE_P(inodo.permisos, INODE_P_READ)) return ERROR_PERMISO_LECTURA; // Necessari?
+    if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO) return FALLO;
+    int num_entradas = inodo_dir.tamEnBytesLog / sizeof(entrada_t);
+    int ult_entrada = num_entradas - 1;
+
+    if (p_entrada == ult_entrada) {
+        if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(entrada_t)) == FALLO) return FALLO;
+    } else {
+        entrada_t entrada_aux;
+
+        if (mi_read_f(p_inodo_dir, &entrada_aux, ult_entrada * sizeof(entrada_t), sizeof(entrada_t)) == FALLO) return FALLO;
+        if (mi_write_f(p_inodo_dir, &entrada_aux, p_entrada * sizeof(entrada_t), sizeof(entrada_t)) == FALLO) return FALLO;
+        if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(entrada_t)) == FALLO) return FALLO;
+    }
+    // TODO: avoid mi_truncar_f redundancy
+
+    inodo.nlinks--;
+    if (inodo.nlinks == 0) {
+        if (liberar_inodo(p_inodo) == FALLO) return FALLO;
+    } else {
+        inodo.ctime = time(NULL);
+        if (escribir_inodo(p_inodo, &inodo) == FALLO) return FALLO;
+    }
+    return EXITO;
 }
+
+/**
+ * Escribir n bytes a los datos de un inodo.
+ *
+ * @param ninodo número de inodo al que escribir
+ * @param buf_original buffer de datos origen; de dónde se van a volcar los datos
+ * @param offset número de byte del inodo del cual empezar a escribir
+ * @param nbytes número de bytes a escribir
+ * @return número de bytes escritos, FALLO en caso de error
+ */
+
+/**
+ * Lee los nbytes de los datos de un inodo a partir de un offset dado
+ *
+ * @param ninodo número de inodo del que leer
+ * @param buf_original buffer de datos destino; dónde se van a volcar los datos
+ * @param offset número de byte del inodo del cual empezar a leer
+ * @param nbytes número de bytes a escribir
+ * @return número de bytes leídos, FALLO en caso de error
+ */
+
+/**
+ * Truncar inodo a partir de un número de bytes.
+ *
+ * @param ninodo número de inodo que truncar
+ * @param nbytes número de bytes que deben quedar en el inodo
+ * @return número de bloques liberados o FALLO en caso de error
+ */
+
+/**
+ * Busca y crea un archivo o directorio dentro del inodo padre
+ *
+ * @param camino_parcial ruta del archivo o directorio a buscar o crear
+ * @param p_inodo_dir número de inodo del directorio padre dentro del array de inodos
+ * @param p_inodo número de inodo al que está asociado el nombre de la entrada buscada
+ * @param p_entrada número de entrada dentro del inodo *p_inodo_dir que lo contiene
+ * @param reservar si vale 1, y este no existe, crea el archivo o directorio;
+ *                 si vale 0, solo busca su existencia dentro del sistema
+ * @param permisos en caso de que reservar valga 1, el archivo o directorio se creará con los permisos especificados
+ * @return valor entero que representa el tipo de salida de la función, error o éxito
+ */
+
+/*
+   buscar_entrada(camino2), reservar 0
+ |->P_entrada
+   V
+   P.inodo
+   leer_inodo()
+   tipo = 'd' -> tamEnBytesLog == 0 ?
+   leer_inodo(P_inodo_dir)
+   nº entradas = tamEnByresLog / sizeof(entrada)
+   mi_truncar_f(...)
+   tamEnBytesLog()
+
+   _________
+ |________|
+ |________|<---.
+ |________|    |  Movemos el la última entrada del inodo directorio a la posicion del inodo que queremos eliminar,
+ |________|----'  se sobreescribe, posteriormente se borra la última
+
+   P_inodo:
+   nlinks--;
+   nlinks == 0 ?  si vale 0: liberar_inodo(p_inodo)
+                  si no vale 0, quiere decir que hay algun camino/enlace a ese inodo:
+                                     ctime
+                                     escribir_inodo()
+
+ */
+
+

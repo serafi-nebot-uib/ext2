@@ -41,7 +41,8 @@ int main(int argc, char *argv[]) {
                 ERROR("no se ha podido escribir a \"%s\"", ruta);
                 ret = FALLO;
             }
-            printf("%d bytes escritos\n", nbytes);
+            printf("longitud texto: %ld \n", strlen(texto));
+            printf("Bytes escritos: %d \n\n", nbytes);
         }
     }
 

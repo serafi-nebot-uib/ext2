@@ -13,8 +13,8 @@ BUILD_DIR=build
 
 # source files from src directory
 SOURCES=$(addprefix $(SRC_DIR)/,\
-	mi_mkfs.c bloques.c ficheros_basico.c leer_sf.c ficheros.c escribir.c leer.c permitir.c helper.c truncar.c directorios.c mi_mkdir.c mi_touch.c mi_ls.c mi_chmod.c mi_stat.c mi_escribir.c mi_cat.c mi_link.c)
-	# mi_rm.c semaforo_mutex_posix.c simulacion.c verificacion.c)
+	mi_mkfs.c bloques.c ficheros_basico.c leer_sf.c ficheros.c escribir.c leer.c permitir.c helper.c truncar.c directorios.c mi_mkdir.c mi_touch.c mi_ls.c mi_chmod.c mi_stat.c mi_escribir.c mi_cat.c mi_link.c mi_rm.c)
+	#semaforo_mutex_posix.c simulacion.c verificacion.c)
 
 # source files from test directory
 TEST_SOURCES=$(wildcard $(TEST_DIR)/*.c)
@@ -25,11 +25,11 @@ LIBRARIES=$(addprefix $(BUILD_DIR)/,\
 
 INCLUDES=$(addprefix $(SRC_DIR)/,\
 	bloques.h ficheros_basico.h ficheros.h directorios.h)
-	# directorios.h semaforo_mutex_posix.h simulacion.h)
+	# semaforo_mutex_posix.h simulacion.h)
 
 PROGRAMS=$(addprefix $(BUILD_DIR)/,\
-	mi_mkfs leer_sf escribir leer permitir truncar mi_mkdir mi_touch mi_ls mi_chmod mi_stat mi_escribir mi_cat mi_link)
-	# mi_cat mi_rm simulacion verificacion)
+	mi_mkfs leer_sf escribir leer permitir truncar mi_mkdir mi_touch mi_ls mi_chmod mi_stat mi_escribir mi_cat mi_link mi_rm)
+	# simulacion verificacion)
 
 # add test programs (remove .c extension and add build dir prefix)
 TEST_PROGRAMS=$(TEST_SOURCES:$(TEST_DIR)/%.c=$(BUILD_DIR)/%)
