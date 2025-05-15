@@ -38,8 +38,8 @@ int main(int argc, char *argv[]) {
         } else {
             int nbytes = mi_write(ruta, texto, offset, strlen(texto));
             if (nbytes < 0) {
-                ERROR("no se ha podido escribir a \"%s\"", ruta);
                 ret = FALLO;
+                nbytes = 0;
             }
             printf("longitud texto: %ld \n", strlen(texto));
             printf("Bytes escritos: %d \n\n", nbytes);

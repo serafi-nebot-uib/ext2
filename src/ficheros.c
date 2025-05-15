@@ -6,8 +6,6 @@
 #include "ficheros.h"
 #include "bloques.h"
 
-#include "helper.h"
-
 /**
  * Escribir n bytes a los datos de un inodo.
  *
@@ -57,10 +55,14 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 
     // actualizar tamEnBytesLog, si hemos ampliado el tamaño total del inodo, mtime y ctime
     if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO;
-    if (inodo.tamEnBytesLog < start + size) inodo.tamEnBytesLog = start + size;
+
     time_t t = time(NULL);
     inodo.mtime = t;
-    inodo.ctime = t;
+
+    if (inodo.tamEnBytesLog < start + size) {
+        inodo.tamEnBytesLog = start + size;
+        inodo.ctime = t;
+    }
 
     if (escribir_inodo(ninodo, &inodo) == FALLO) return FALLO;
 
