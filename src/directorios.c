@@ -164,13 +164,13 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
 void mostrar_error_buscar_entrada(int error) {
     // fprintf(stderr, "Error: %d\n", error);
     switch (error) {
-    case ERROR_CAMINO_INCORRECTO:                       ERROR("Camino incorrecto"); break;
-    case ERROR_PERMISO_LECTURA:                         ERROR("Permiso denegado de lectura"); break;
-    case ERROR_NO_EXISTE_ENTRADA_CONSULTA:              ERROR("No existe el archivo o el directorio"); break;
-    case ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO:         ERROR("No existe algún directorio intermedio"); break;
-    case ERROR_PERMISO_ESCRITURA:                       ERROR("Permiso denegado de escritura"); break;
-    case ERROR_ENTRADA_YA_EXISTENTE:                    ERROR("El archivo ya existe"); break;
-    case ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO: ERROR("No es un directorio"); break;
+    case ERROR_CAMINO_INCORRECTO:                       ERROR("camino incorrecto"); break;
+    case ERROR_PERMISO_LECTURA:                         ERROR("permiso denegado de lectura"); break;
+    case ERROR_NO_EXISTE_ENTRADA_CONSULTA:              ERROR("no existe el archivo o el directorio"); break;
+    case ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO:         ERROR("no existe algún directorio intermedio"); break;
+    case ERROR_PERMISO_ESCRITURA:                       ERROR("permiso denegado de escritura"); break;
+    case ERROR_ENTRADA_YA_EXISTENTE:                    ERROR("el archivo ya existe"); break;
+    case ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO: ERROR("no es un directorio"); break;
     }
 }
 
@@ -189,9 +189,9 @@ int mi_creat(const char *camino, unsigned char permisos) {
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 1, permisos);
     if (ret != EXITO) return ret;
 
-    DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
-    DEBUG(2, "p_inodo: %u", p_inodo);
-    DEBUG(2, "p_entrada: %u", p_entrada);
+    DEBUG(1, "p_inodo_dir: %u", p_inodo_dir);
+    DEBUG(1, "p_inodo: %u", p_inodo);
+    DEBUG(1, "p_entrada: %u", p_entrada);
 
     inodo_t inodo_dir, inodo;
     if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO || leer_inodo(p_inodo, &inodo)) return FALLO;
@@ -246,9 +246,9 @@ int mi_dir(const char *camino, char *buffer, char flag) {
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
     if (ret < 0) return ret;
 
-    DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
-    DEBUG(2, "p_inodo: %u", p_inodo);
-    DEBUG(2, "p_entrada: %u", p_entrada);
+    DEBUG(1, "p_inodo_dir: %u", p_inodo_dir);
+    DEBUG(1, "p_inodo: %u", p_inodo);
+    DEBUG(1, "p_entrada: %u", p_entrada);
 
     inodo_t inode;
     if (leer_inodo(p_inodo, &inode) == FALLO) return FALLO;
@@ -256,6 +256,7 @@ int mi_dir(const char *camino, char *buffer, char flag) {
 
     char line[TAMFILA] = { 0 };
     size_t n = inode.tamEnBytesLog / sizeof(entrada_t);
+    DEBUG(1, "n = inode.tamEnBytesLog / sizeof(entrada_t) = %u / %lu = %zu", inode.tamEnBytesLog, sizeof(entrada_t), n);
 
     if (inode.tipo == 'd') {
         strcat(buffer, "Total: ");
@@ -265,7 +266,9 @@ int mi_dir(const char *camino, char *buffer, char flag) {
         strcat(buffer, "\n");
     }
 
-    if ((flag && n > 0) || inode.tipo != 'd') {
+    if (n == 0) return 0;
+
+    if (flag) {
         strcat(buffer, "Tipo\tModo\tmTime\t\t\tTamaño\tNombre\n");
         memset(line, '-', TAMFILA);
         line[64 - 1] = 0;
@@ -278,13 +281,14 @@ int mi_dir(const char *camino, char *buffer, char flag) {
         char final[strlen(camino)];
         if (extraer_camino_final(camino, final) == FALLO) return FALLO;
         mi_dir_entrada(final, &inode, buffer, flag);
+        strcat(buffer, "\n");
         return 1;
     }
 
     //TODO: mirar mem quina funció és sa que fa que s'imprimeixin es dos inodes 0
     entrada_t entradas[ENTRADAS_IN_BLOCK];
     if (mi_read_f(p_inodo, entradas, 0, BLOCKSIZE) == FALLO) return FALLO;
-    for (size_t i = 0; i <= n + 1; i++) {
+    for (size_t i = 0; i < n; i++) {
         DEBUG(1, "entrada %zu -> ninodo: %u; nombre: %s", i, entradas[i].ninodo, entradas[i].nombre);
         if (leer_inodo(entradas[i].ninodo, &inode) == FALLO) return FALLO;
         mi_dir_entrada(entradas[i].nombre, &inode, buffer, flag);
