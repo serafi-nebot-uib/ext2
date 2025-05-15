@@ -3,7 +3,7 @@
 * author: serafí nebot, ignasi paredes, jaume galmés
 **************************************************************************/
 
-#include "directorios.h"
+#include "core/directorios.h"
 
 int main(int argc, char **argv) {
     if (argc != 3) {

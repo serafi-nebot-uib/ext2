@@ -3,7 +3,7 @@
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
-#include "directorios.h"
+#include "core/directorios.h"
 
 void mostrar_buscar_entrada(char *camino, char reservar){
     unsigned int p_inodo_dir = 0;

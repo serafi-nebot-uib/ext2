@@ -14,7 +14,7 @@
 #include <sys/stat.h> //S_IRUSR, S_IWUSR
 #include <unistd.h>   // SEEK_SET, read(), write(), open(), close(), lseek()
 
-#include "logging.h"
+#include "util/logging.h"
 
 #define BLOCKSIZE 1024 // bytes
 

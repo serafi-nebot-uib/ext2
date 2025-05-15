@@ -3,8 +3,8 @@
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
-#include "directorios.h"
-#include "helper.h"
+#include "core/directorios.h"
+#include "util/helper.h"
 
 #define TAM_BUFFER (BLOCKSIZE * 2)
 // #define TAM_BUFFER 1500

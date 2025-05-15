@@ -3,7 +3,7 @@
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
-#include "directorios.h"
+#include "core/directorios.h"
 
 int main(int argc, char *argv[]) {
     if (argc != 4 || (argv[3][0] != '0' && argv[3][0] != '1')) {

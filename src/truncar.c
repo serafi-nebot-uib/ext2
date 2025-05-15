@@ -3,7 +3,7 @@
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
-#include "ficheros.h"
+#include "core/ficheros.h"
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
