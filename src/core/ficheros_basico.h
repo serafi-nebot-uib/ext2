@@ -12,7 +12,7 @@
 #include <time.h>
 
 #include "bloques.h"
-#include "util/colors.h"
+#include <util/colors.h>
 
 #define posSB 0 // posición predeterminada, el superbloque se escribe en el primer bloque de nuestro FS
 #define tamSB 1

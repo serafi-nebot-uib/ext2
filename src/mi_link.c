@@ -15,9 +15,9 @@ int main(int argc, char *argv[]) {
     char *ruta_original = argv[2];
     char *ruta_enlace = argv[3];
 
-    DEBUG(1, "nombre_dispositivo: %s", nombre_dispositivo);
-    DEBUG(1, "ruta_original: %s", ruta_original);
-    DEBUG(1, "ruta_enlace: %s", ruta_enlace);
+    DEBUG(2, "nombre_dispositivo: %s", nombre_dispositivo);
+    DEBUG(2, "ruta_original: %s", ruta_original);
+    DEBUG(2, "ruta_enlace: %s", ruta_enlace);
 
     if (bmount(nombre_dispositivo) == FALLO) {
         ERROR("no se ha podido montar el dispositivo: \"%s\"", nombre_dispositivo);

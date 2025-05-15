@@ -9,7 +9,8 @@
 #include "ficheros.h"
 
 #define DELIM "/"
-#define TAMNOMBRE 60 //tamaño del nombre de directorio o fichero, en Ext2 = 256
+#define TAMNOMBRE 60 // tamaño del nombre de directorio o fichero, en Ext2 = 256
+#define PROFUNDIDAD 32 // profundidad máxima del árbol de directorios
 #define TAMFILA 100
 #define TAMBUFFER (TAMFILA * 1000) // suponemos un máx de 1000 entradas, aunque debería ser SB.totInodos
 
@@ -28,6 +29,29 @@ typedef struct  {
 
 #define ENTRADAS_IN_BLOCK (BLOCKSIZE / sizeof(entrada_t))
 
+#ifndef USARCACHE
+#define USARCACHE 2 // 0: sin caché, 1: última L/E, 2: tabla FIFO, 3: tabla LRU
+#endif
+
+#if USARCACHE == 1
+    #ifndef CACHE_SIZE
+        #define CACHE_SIZE 1
+    #endif
+#elif USARCACHE > 1
+    #ifndef CACHE_SIZE
+        #define CACHE_SIZE 3
+    #endif
+#endif
+
+typedef struct entrada_cache {
+    char camino[TAMNOMBRE * PROFUNDIDAD];
+    unsigned int p_inodo;
+    struct entrada_cache *next;
+} entrada_cache_t;
+
+static unsigned int entrada_cache_root = 0;
+static entrada_cache_t entrada_cache[CACHE_SIZE];
+
 int extraer_camino(const char *camino, char *inicial, char *final, char *tipo);
 int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsigned int *p_inodo, unsigned int *p_entrada, char reservar, unsigned char permisos);
 void mostrar_error_buscar_entrada(int error);
@@ -39,4 +63,5 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes);
 int mi_link(const char *camino1, const char *camino2);
 int mi_unlink(const char *camino);
+
 #endif

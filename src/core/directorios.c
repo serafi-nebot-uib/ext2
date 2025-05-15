@@ -92,7 +92,7 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
     char tipo;
 
     if (extraer_camino(camino_parcial, inicial, final, &tipo) == FALLO) return ERROR_CAMINO_INCORRECTO;
-    DEBUG(1, "inicial: %s, final: %s, reservar: %d", inicial, final, reservar);
+    DEBUG(2, "inicial: %s, final: %s, reservar: %d", inicial, final, reservar);
 
     if (leer_inodo(*p_inodo_dir, &inodo_dir) == FALLO) return FALLO;
     if (!INODE_P(inodo_dir.permisos, INODE_P_READ)) return ERROR_PERMISO_LECTURA; // comprueba que el inodo tenga permisos de lectura
@@ -132,19 +132,19 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
 
         inodo_t tmp;
         if (leer_inodo(entrada.ninodo, &tmp) == FALLO) return FALLO;
-        DEBUG(1, "reservado inodo %u tipo %c con permisos %u para %s", entrada.ninodo, tmp.tipo, tmp.permisos, entrada.nombre);
+        DEBUG(2, "reservado inodo %u tipo %c con permisos %u para %s", entrada.ninodo, tmp.tipo, tmp.permisos, entrada.nombre);
 
         // escribir la entrada en el directorio padre por el final
         if (mi_write_f(*p_inodo_dir, &entrada, cant_entradas_inodo * sizeof(entrada_t), sizeof(entrada_t)) == FALLO) {
             if (entrada.ninodo != -1) liberar_inodo(entrada.ninodo);     // si se habia reservado un inodo para la entrada, se libera
             return FALLO;
         }
-        DEBUG(1, "creada entrada: %s, %u", entrada.nombre, entrada.ninodo);
+        DEBUG(2, "creada entrada: %s, %u", entrada.nombre, entrada.ninodo);
     }
 
     if (strcmp(final, "") == 0 || strcmp(final, "/") == 0) {                                             // si final está vacío o sólo tiene "/", hemos llegado al final del camino
         if (num_entrada_inodo < cant_entradas_inodo && reservar == 1) return ERROR_ENTRADA_YA_EXISTENTE; // modo escritura y la entrada ya existe cortamos la recursividad
-        DEBUG(1, "*p_inodo = entrada.ninodo = %u", entrada.ninodo);
+        DEBUG(2, "*p_inodo = entrada.ninodo = %u", entrada.ninodo);
         *p_inodo = entrada.ninodo;      // asigna a *p_inodo el número de inodo del directorio o fichero creado o leido
         *p_entrada = num_entrada_inodo; // asigna a *p_entrada el número de su entrada dentro del último directorio que lo contiene
         return EXITO;
@@ -189,9 +189,9 @@ int mi_creat(const char *camino, unsigned char permisos) {
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 1, permisos);
     if (ret != EXITO) return ret;
 
-    DEBUG(1, "p_inodo_dir: %u", p_inodo_dir);
-    DEBUG(1, "p_inodo: %u", p_inodo);
-    DEBUG(1, "p_entrada: %u", p_entrada);
+    DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
+    DEBUG(2, "p_inodo: %u", p_inodo);
+    DEBUG(2, "p_entrada: %u", p_entrada);
 
     inodo_t inodo_dir, inodo;
     if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO || leer_inodo(p_inodo, &inodo)) return FALLO;
@@ -246,9 +246,9 @@ int mi_dir(const char *camino, char *buffer, char flag) {
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
     if (ret < 0) return ret;
 
-    DEBUG(1, "p_inodo_dir: %u", p_inodo_dir);
-    DEBUG(1, "p_inodo: %u", p_inodo);
-    DEBUG(1, "p_entrada: %u", p_entrada);
+    DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
+    DEBUG(2, "p_inodo: %u", p_inodo);
+    DEBUG(2, "p_entrada: %u", p_entrada);
 
     inodo_t inode;
     if (leer_inodo(p_inodo, &inode) == FALLO) return FALLO;
@@ -256,7 +256,7 @@ int mi_dir(const char *camino, char *buffer, char flag) {
 
     char line[TAMFILA] = { 0 };
     size_t n = inode.tamEnBytesLog / sizeof(entrada_t);
-    DEBUG(1, "n = inode.tamEnBytesLog / sizeof(entrada_t) = %u / %lu = %zu", inode.tamEnBytesLog, sizeof(entrada_t), n);
+    DEBUG(2, "n = inode.tamEnBytesLog / sizeof(entrada_t) = %u / %lu = %zu", inode.tamEnBytesLog, sizeof(entrada_t), n);
 
     if (inode.tipo == 'd') {
         strcat(buffer, "Total: ");
@@ -289,7 +289,7 @@ int mi_dir(const char *camino, char *buffer, char flag) {
     entrada_t entradas[ENTRADAS_IN_BLOCK];
     if (mi_read_f(p_inodo, entradas, 0, BLOCKSIZE) == FALLO) return FALLO;
     for (size_t i = 0; i < n; i++) {
-        DEBUG(1, "entrada %zu -> ninodo: %u; nombre: %s", i, entradas[i].ninodo, entradas[i].nombre);
+        DEBUG(2, "entrada %zu -> ninodo: %u; nombre: %s", i, entradas[i].ninodo, entradas[i].nombre);
         if (leer_inodo(entradas[i].ninodo, &inode) == FALLO) return FALLO;
         mi_dir_entrada(entradas[i].nombre, &inode, buffer, flag);
     }
@@ -336,6 +336,44 @@ int mi_stat(const char *camino, stat_t *p_stat) {
 
 // TODO: implement cache system for bonus points
 
+int entrada_cache_get(const char *const camino, unsigned int *const p_inodo) {
+    int ret = -1;
+    unsigned int idx = 0;
+
+#if USARCACHE == 1
+    entrada_cache_t *cache = &entrada_cache[entrada_cache_root];
+    if (strcmp(cache->camino, camino) == 0) {
+        *p_inodo = cache->p_inodo;
+        ret = 0;
+    }
+#elif USARCACHE == 2
+    // TODO: iterate through array backwards from entrada_cache_root to optimize for latest used?
+    for (size_t i = 0; i < CACHE_SIZE && ret < 0; i++) {
+        if (strcmp(entrada_cache[i].camino, camino) == 0) {
+            idx = i;
+            *p_inodo = entrada_cache[i].p_inodo;
+            ret = 0;
+        }
+    }
+#elif USARCACHE == 3
+#endif
+
+    if (ret == 0) DEBUG(1, "utilizamos cache[%u]: %s", idx, camino);
+
+    return ret;
+}
+
+void entrada_cache_put(const char *const camino, unsigned int p_inodo) {
+    entrada_cache_t *cache = &entrada_cache[entrada_cache_root];
+    strncpy(cache->camino, camino, sizeof(cache->camino));
+    cache->p_inodo = p_inodo;
+    DEBUG(1, "reemplazamos cache[%u]: %s", entrada_cache_root, camino);
+
+#if USARCACHE == 2
+    entrada_cache_root = (entrada_cache_root + 1) % CACHE_SIZE; // entrada_cache_root siempre apunta a la entrada actual
+#endif
+}
+
 /**
  * Escribir n bytes a los datos de un inodo.
  *
@@ -346,14 +384,21 @@ int mi_stat(const char *camino, stat_t *p_stat) {
  * @return número de bytes escritos, FALLO en caso de error
  */
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes) {
-    superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO;
+    unsigned int p_inodo_dir = 0, p_inodo = 0, p_entrada = 0;
 
-    unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
-    int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
-    if (ret > 0) {
-        mostrar_error_buscar_entrada(ret);
-        return ret;
+    if (entrada_cache_get(camino, &p_inodo) < 0) {
+        // DEBUG(1, "\"%s\" not found in entrada cache", camino);
+        superbloque_t sb;
+        if (bread(posSB, &sb) == FALLO) return FALLO;
+
+        p_inodo_dir = sb.posInodoRaiz;
+        int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
+        if (ret > 0) {
+            mostrar_error_buscar_entrada(ret);
+            return ret;
+        }
+
+        entrada_cache_put(camino, p_inodo);
     }
 
     DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
@@ -364,14 +409,21 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
 }
 
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes) {
-    superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO;
+    unsigned int p_inodo_dir = 0, p_inodo = 0, p_entrada = 0;
 
-    unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
-    int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
-    if (ret > 0) {
-        mostrar_error_buscar_entrada(ret);
-        return ret;
+    if (entrada_cache_get(camino, &p_inodo) < 0) {
+        // DEBUG(1, "\"%s\" not found in entrada cache", camino);
+        superbloque_t sb;
+        if (bread(posSB, &sb) == FALLO) return FALLO;
+
+        p_inodo_dir = sb.posInodoRaiz;
+        int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
+        if (ret > 0) {
+            mostrar_error_buscar_entrada(ret);
+            return ret;
+        }
+
+        entrada_cache_put(camino, p_inodo);
     }
 
     DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
@@ -399,9 +451,9 @@ int mi_link(const char *camino1, const char *camino2) {
         return ret;
     }
 
-    DEBUG(1, "p_inodo_dir_1: %u", p_inodo_dir_1);
-    DEBUG(1, "p_inodo_1: %u", p_inodo_1);
-    DEBUG(1, "p_entrada_1: %u", p_entrada_1);
+    DEBUG(2, "p_inodo_dir_1: %u", p_inodo_dir_1);
+    DEBUG(2, "p_inodo_1: %u", p_inodo_1);
+    DEBUG(2, "p_entrada_1: %u", p_entrada_1);
 
     inodo_t inodo_1;
     if (leer_inodo(p_inodo_1, &inodo_1) == FALLO) return FALLO;
@@ -415,9 +467,9 @@ int mi_link(const char *camino1, const char *camino2) {
         return ret;
     }
 
-    DEBUG(1, "p_inodo_dir_2: %u", p_inodo_dir_2);
-    DEBUG(1, "p_inodo_2: %u", p_inodo_2);
-    DEBUG(1, "p_entrada_2: %u", p_entrada_2);
+    DEBUG(2, "p_inodo_dir_2: %u", p_inodo_dir_2);
+    DEBUG(2, "p_inodo_2: %u", p_inodo_2);
+    DEBUG(2, "p_entrada_2: %u", p_entrada_2);
 
     entrada_t entrada_2;
     if (mi_read_f(p_inodo_dir_2, &entrada_2, p_entrada_2 * sizeof(entrada_2), sizeof(entrada_2)) == FALLO) return FALLO;
@@ -449,9 +501,9 @@ int mi_unlink(const char *camino) {
         return ret;
     }
 
-    DEBUG(1, "p_inodo_dir: %u", p_inodo_dir);
-    DEBUG(1, "p_inodo: %u", p_inodo);
-    DEBUG(1, "p_entrada: %u", p_entrada);
+    DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
+    DEBUG(2, "p_inodo: %u", p_inodo);
+    DEBUG(2, "p_entrada: %u", p_entrada);
 
     inodo_t inodo, inodo_dir;
     if (leer_inodo(p_inodo, &inodo) == FALLO) return FALLO;

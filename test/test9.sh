@@ -84,8 +84,8 @@ echo -e "\x1B[38;2;17;245;120m##################################################
 echo -e "\x1B[38;2;17;245;120m$ ./build/mi_touch disco 6 /dir1/fic2\x1b[0m"
 ./build/mi_touch disco 6 /dir1/fic2
 echo
-echo -e "\x1B[38;2;17;245;120m$ ./build/mi_escribir disco /dir1/fic2 "$(cat texto2.txt)" 1000\x1b[0m"
-./build/mi_escribir disco /dir1/fic2 "$(cat texto2.txt)" 1000
+echo -e "\x1B[38;2;17;245;120m$ ./build/mi_escribir disco /dir1/fic2 "$(cat ./test/texto2.txt)" 1000\x1b[0m"
+./build/mi_escribir disco /dir1/fic2 "$(cat ./test/texto2.txt)" 1000
 echo
 echo -e "\x1B[38;2;17;245;120m$ ./build/mi_cat disco /dir1/fic2 #tambuffer=BLOCKSIZE * 4\x1b[0m"
 ./build/mi_cat disco /dir1/fic2 
