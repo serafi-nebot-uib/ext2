@@ -20,7 +20,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     inodo_t inodo = {};
     if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO;
     if (!INODE_P(inodo.permisos, INODE_P_WRITE)) {
-        ERROR("inodo %d no tiene permisos de escritura", ninodo);
+        ERROR("no hay permisos de escritura");
         return FALLO;
     }
 
@@ -86,7 +86,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     if (leer_inodo(ninodo, &inodo) == -1) return FALLO;
     // comprueba que el inodo tenga permisos de lectura
     if (!INODE_P(inodo.permisos, INODE_P_READ)) {
-        ERROR("inodo %d no tiene permisos de lectura", ninodo);
+        ERROR("no hay permisos de lectura");
         return FALLO;
     }
 

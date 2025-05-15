@@ -4,6 +4,7 @@
 **************************************************************************/
 
 #include <stdbool.h>
+#include "util/colors.h"
 #include "core/directorios.h"
 
 void syntax(const char *const name) {
@@ -41,5 +42,5 @@ int main(int argc, char **argv) {
         return FALLO;
     }
 
-    return ret > 0 ? EXITO : FALLO;
+    return ret >= 0 ? EXITO : FALLO;
 }

@@ -266,8 +266,6 @@ int mi_dir(const char *camino, char *buffer, char flag) {
         strcat(buffer, "\n");
     }
 
-    if (n == 0) return 0;
-
     if (flag) {
         strcat(buffer, "Tipo\tModo\tmTime\t\t\tTamaño\tNombre\n");
         memset(line, '-', TAMFILA);
@@ -284,6 +282,8 @@ int mi_dir(const char *camino, char *buffer, char flag) {
         strcat(buffer, "\n");
         return 1;
     }
+
+    if (n == 0) return 0;
 
     //TODO: mirar mem quina funció és sa que fa que s'imprimeixin es dos inodes 0
     entrada_t entradas[ENTRADAS_IN_BLOCK];
