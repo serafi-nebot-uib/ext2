@@ -44,3 +44,11 @@ void hexdump_col(const void * const buff, size_t offset, const size_t size, cons
 void hexdump(const void * const buff, size_t offset, const size_t size, const uint32_t addr_start) {
     hexdump_raw(buff, offset, size, addr_start, 16, 8, stdout);
 }
+
+void timeval_fmt(const struct timeval *tv, char *buf, size_t buflen) {
+    struct tm tm_info;
+    localtime_r(&tv->tv_sec, &tm_info); // or gmtime_r for UTC
+    strftime(buf, buflen, "%Y-%m-%d %H:%M:%S", &tm_info);
+    size_t len = strlen(buf);
+    snprintf(buf + len, buflen - len, ".%06ld", (long)tv->tv_usec);
+}

@@ -3,6 +3,9 @@
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
+#include <sys/time.h>
+
+#include "util/helper.h"
 #include "directorios.h"
 #include "ficheros_basico.h"
 
@@ -334,20 +337,19 @@ int mi_stat(const char *camino, stat_t *p_stat) {
     return mi_stat_f(p_inodo, p_stat) == EXITO ? p_inodo : FALLO;
 }
 
-// TODO: implement cache system for bonus points
-
 int entrada_cache_get(const char *const camino, unsigned int *const p_inodo) {
+#if CACHE == 0
+    return -1;
+#else
     int ret = -1;
-    unsigned int idx = 0;
 
-#if USARCACHE == 1
-    entrada_cache_t *cache = &entrada_cache[entrada_cache_root];
-    if (strcmp(cache->camino, camino) == 0) {
-        *p_inodo = cache->p_inodo;
+#if CACHE == 1
+    if (strcmp(entrada_cache.camino, camino) == 0) {
+        *p_inodo = entrada_cache.p_inodo;
         ret = 0;
     }
-#elif USARCACHE == 2
-    // TODO: iterate through array backwards from entrada_cache_root to optimize for latest used?
+#elif CACHE == 2 || CACHE == 3
+    unsigned int idx = 0;
     for (size_t i = 0; i < CACHE_SIZE && ret < 0; i++) {
         if (strcmp(entrada_cache[i].camino, camino) == 0) {
             idx = i;
@@ -355,22 +357,48 @@ int entrada_cache_get(const char *const camino, unsigned int *const p_inodo) {
             ret = 0;
         }
     }
-#elif USARCACHE == 3
+    if (ret == 0) {
+        DEBUG(1, CYAN "utilizamos cache[%u]: %s" RESET, idx, camino);
+#if CACHE == 3
+        gettimeofday(&entrada_cache[idx].ultima_consulta, NULL);
+#endif
+    }
 #endif
 
-    if (ret == 0) DEBUG(1, "utilizamos cache[%u]: %s", idx, camino);
-
     return ret;
+#endif
 }
 
 void entrada_cache_put(const char *const camino, unsigned int p_inodo) {
-    entrada_cache_t *cache = &entrada_cache[entrada_cache_root];
+#if CACHE > 0
+
+#if CACHE == 1
+    strncpy(entrada_cache.camino, camino, sizeof(entrada_cache.camino));
+    entrada_cache.p_inodo = p_inodo;
+#else
+    unsigned int idx = entrada_cache_top;
+#if CACHE == 2
+    entrada_cache_top = (entrada_cache_top + 1) % CACHE_SIZE;
+#endif
+#if CACHE == 3
+    for (size_t i = 0; i < CACHE_SIZE; i++) {
+        if (!timerisset(&entrada_cache[i].ultima_consulta)) {
+            DEBUG(3, "entrada_cache[%zu] timer is not set", i);
+            idx = i;
+            break;
+        }
+        if (timercmp(&entrada_cache[i].ultima_consulta, &entrada_cache[idx].ultima_consulta, <)) {
+            idx = i;
+        }
+    }
+    gettimeofday(&entrada_cache[idx].ultima_consulta, NULL);
+#endif
+    entrada_cache_t *cache = &entrada_cache[idx];
     strncpy(cache->camino, camino, sizeof(cache->camino));
     cache->p_inodo = p_inodo;
-    DEBUG(1, "reemplazamos cache[%u]: %s", entrada_cache_root, camino);
+    DEBUG(1, ORANGE "reemplazamos cache[%u]: %s" RESET, idx, camino);
+#endif
 
-#if USARCACHE == 2
-    entrada_cache_root = (entrada_cache_root + 1) % CACHE_SIZE; // entrada_cache_root siempre apunta a la entrada actual
 #endif
 }
 
@@ -387,7 +415,6 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     unsigned int p_inodo_dir = 0, p_inodo = 0, p_entrada = 0;
 
     if (entrada_cache_get(camino, &p_inodo) < 0) {
-        // DEBUG(1, "\"%s\" not found in entrada cache", camino);
         superbloque_t sb;
         if (bread(posSB, &sb) == FALLO) return FALLO;
 
@@ -398,7 +425,14 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
             return ret;
         }
 
+#if CACHE == 1
+        DEBUG(1, ORANGE "actualizamos la cache de escritura" RESET);
+#endif
         entrada_cache_put(camino, p_inodo);
+    } else {
+#if CACHE == 1
+        DEBUG(1, CYAN "utilizamos la caché de escritura en vez de llamar a buscar_entrada()" RESET);
+#endif
     }
 
     DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
@@ -423,7 +457,14 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
             return ret;
         }
 
+#if CACHE == 1
+        DEBUG(1, ORANGE "actualizamos la cache de lectura" RESET);
+#endif
         entrada_cache_put(camino, p_inodo);
+    } else {
+#if CACHE == 1
+        DEBUG(1, CYAN "utilizamos la caché de lectura en vez de llamar a buscar_entrada()" RESET);
+#endif
     }
 
     DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
@@ -604,5 +645,4 @@ int mi_unlink(const char *camino) {
                                      escribir_inodo()
 
  */
-
 

@@ -21,6 +21,8 @@ int main(int argc, char *argv[]) {
     DEBUG(2, "texto: %s", texto);
     DEBUG(2, "offset: %u", offset);
 
+    printf("longitud texto: %ld \n", strlen(texto));
+
     if (bmount(nombre_dispositivo) == FALLO) {
         ERROR("no se ha podido montar el dispositivo: \"%s\"", nombre_dispositivo);
         return FALLO;
@@ -41,7 +43,6 @@ int main(int argc, char *argv[]) {
                 ret = FALLO;
                 nbytes = 0;
             }
-            printf("longitud texto: %ld \n", strlen(texto));
             printf("Bytes escritos: %d \n\n", nbytes);
         }
     }

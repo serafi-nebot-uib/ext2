@@ -29,28 +29,34 @@ typedef struct  {
 
 #define ENTRADAS_IN_BLOCK (BLOCKSIZE / sizeof(entrada_t))
 
-#ifndef USARCACHE
-#define USARCACHE 2 // 0: sin caché, 1: última L/E, 2: tabla FIFO, 3: tabla LRU
+#ifndef CACHE
+#define CACHE 1 // 0: sin caché, 1: última L/E, 2: tabla FIFO, 3: tabla LRU
 #endif
 
-#if USARCACHE == 1
-    #ifndef CACHE_SIZE
-        #define CACHE_SIZE 1
-    #endif
-#elif USARCACHE > 1
-    #ifndef CACHE_SIZE
-        #define CACHE_SIZE 3
-    #endif
-#endif
-
+#if CACHE > 0
 typedef struct entrada_cache {
     char camino[TAMNOMBRE * PROFUNDIDAD];
     unsigned int p_inodo;
     struct entrada_cache *next;
+#if CACHE == 3
+    struct timeval ultima_consulta;
+#endif
 } entrada_cache_t;
 
-static unsigned int entrada_cache_root = 0;
-static entrada_cache_t entrada_cache[CACHE_SIZE];
+#if CACHE == 1
+static entrada_cache_t entrada_cache = {};
+#elif CACHE > 1
+    #ifndef CACHE_SIZE
+        #define CACHE_SIZE 3
+    #else
+        #if CACHE_SIZE == 0
+            #error "CACHE_SIZE debe ser > 0"
+        #endif
+    #endif
+static unsigned int entrada_cache_top = 0;
+static entrada_cache_t entrada_cache[CACHE_SIZE] = {};
+#endif
+#endif
 
 int extraer_camino(const char *camino, char *inicial, char *final, char *tipo);
 int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsigned int *p_inodo, unsigned int *p_entrada, char reservar, unsigned char permisos);
