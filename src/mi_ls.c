@@ -8,7 +8,7 @@
 #include "core/directorios.h"
 
 void syntax(const char *const name) {
-    fprintf(stderr, BOLD "sintaxis: " RESET "%1$s <disco> </ruta>\n\t%1$s -l <disco> </ruta>\n", name);
+    fprintf(stderr, RED "sintaxis: %1$s <disco> </ruta>\n\t%1$s -l <disco> </ruta>\n" RESET, name);
 }
 
 int main(int argc, char **argv) {

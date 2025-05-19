@@ -7,7 +7,7 @@
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
-        fprintf(stderr, BOLD "sintaxis: " RESET "%s <disco> </ruta>\n", argv[0]);
+        fprintf(stderr, RED "sintaxis: %s <disco> </ruta>\n" RESET, argv[0]);
         return FALLO;
     }
 

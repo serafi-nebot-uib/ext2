@@ -32,4 +32,4 @@ $(BUILD_DIR):
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR) *~ disco* ext*
+	rm -rf $(BUILD_DIR) *~ disco* ext* *res

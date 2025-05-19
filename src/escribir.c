@@ -8,8 +8,8 @@
 int main(int argc, char *argv[]) {
     if (argc != 4 || (argv[3][0] != '0' && argv[3][0] != '1')) {
         // aseguramos que hay un 0 o un 1
-        fprintf(stderr, BOLD "sintaxis: " RESET "%s <nombre_dispositivo> <texto> <diferentes_inodos>\n", argv[0]);
-        fprintf(stderr, BOLD "offsets: " RESET "9000, 209000, 30725000, 409605000, 480000000\n");
+        fprintf(stderr, RED "sintaxis: %s <nombre_dispositivo> <texto> <diferentes_inodos>\n" RESET, argv[0]);
+        fprintf(stderr, RED "offsets: 9000, 209000, 30725000, 409605000, 480000000\n" RESET);
         fprintf(stderr, "si diferentes_inodos=0 se reserva un solo inodo para todos los offsets\n\n");
         return FALLO;
     }

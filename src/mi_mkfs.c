@@ -7,7 +7,7 @@
 
 int main(int argc, char **argv) {
     if (argc != 3) {
-        fprintf(stderr, BOLD "sintaxis: " RESET "%s <nombre_dispositivo> <nbloques>\n", argv[0]);
+        fprintf(stderr, RED "sintaxis: %s <nombre_dispositivo> <nbloques>\n" RESET, argv[0]);
         return FALLO;
     }
 
