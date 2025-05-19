@@ -1,6 +1,6 @@
 /**************************************************************************
-* filename: mi_touch.c
-* author: serafí nebot, ignasi paredes, jaume galmés
+* FILENAME: mi_touch.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
 #include "core/directorios.h"

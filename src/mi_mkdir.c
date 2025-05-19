@@ -1,6 +1,6 @@
 /**************************************************************************
-* filename: mi_mkdir.c
-* author: serafí nebot, ignasi paredes, jaume galmés
+* FILENAME: mi_mkdir.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
 #include "core/directorios.h"

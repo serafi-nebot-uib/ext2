@@ -1,6 +1,6 @@
 /**************************************************************************
-* filename: mi_chmod.c
-* author: serafí nebot, ignasi paredes, jaume galmés
+* FILENAME: mi_chmod.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
 #include "core/directorios.h"

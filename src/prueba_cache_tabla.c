@@ -1,3 +1,7 @@
+/**************************************************************************
+* FILENAME: prueba_cache_tabla.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
 #include "core/directorios.h"
 
 int main(int argc, char **argv){

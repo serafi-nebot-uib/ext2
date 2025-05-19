@@ -44,6 +44,14 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo) {
     return EXITO;
 }
 
+/**
+ *  Extrae, a partir de un string cuyo contenido es la ruta de un archivo o directorio,
+ *  el contenido final del camino
+ *
+ * @param camino puntero al string con la ruta a extraer
+ * @param final puntero al string donde se escribirá el trozo final del camino
+ * @return EXITO si se extrae el valor correctamente, FALLO en caso contrario
+ */
 int extraer_camino_final(const char *camino, char *const final) {
     if (camino == NULL || final == NULL) return FALLO;
 
@@ -206,6 +214,14 @@ int mi_creat(const char *camino, unsigned char permisos) {
     return EXITO;
 }
 
+/**
+ * Función auxiliar que añade entradas y formatea el buffer de la función mi_dir
+ *
+ * @param nombre nombre del fichero / directorio a añadir al buffer
+ * @param inodo_t inodo del fichero / directorio a añadir al buffer
+ * @param buffer buffer sobre el cual se está trabajando
+ * @param flag permite seleccionar el modo de formateo del buffer
+ */
 void mi_dir_entrada(const char *const nombre, inodo_t *inode, char *buffer, char flag) {
     char tmp[24] = { 0 };
     const char *const color = inode->tipo == 'd' ? BLUE : GREEN;
@@ -241,12 +257,14 @@ void mi_dir_entrada(const char *const nombre, inodo_t *inode, char *buffer, char
  * @param camino ruta del directorio a imprimir
  * @param buffer posición de memoria donde se almacena el contenido de un directorio
  * @param flag permite seleccionar el formato de impresión
- * @return número de entradas en el directorio
+ * @return Número de entradas del directorio en caso de éxito,
+ *         FALLO/código de error en caso contrario.
  */
 int mi_dir(const char *camino, char *buffer, char flag) {
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
+    printf("camino: %s\n", camino);
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
     if (ret < 0) return ret;
@@ -284,7 +302,7 @@ int mi_dir(const char *camino, char *buffer, char flag) {
         char final[strlen(camino)];
         if (extraer_camino_final(camino, final) == FALLO) return FALLO;
         mi_dir_entrada(final, &inode, buffer, flag);
-        strcat(buffer, "\n");
+        strcat(buffer, "\n" RESET);
         return 1;
     }
 
@@ -303,6 +321,13 @@ int mi_dir(const char *camino, char *buffer, char flag) {
     return n;
 }
 
+/**
+ * Cambia los permisos de un fichero o directorio
+ *
+ * @param camino ruta del directorio o fichero
+ * @param permisos nivel de permisos a establecer (en octal)
+ * @return EXITO en caso correcto, FALLO/código de error en caso contrario.
+ */
 int mi_chmod(const char *camino, unsigned char permisos) {
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
@@ -321,6 +346,15 @@ int mi_chmod(const char *camino, unsigned char permisos) {
     return mi_chmod_f(p_inodo, permisos);
 }
 
+/**
+ * Obtiene el inodo asociado a una entrada pasada por parámetro
+ * y obtiene sus stats mediante una posterior llamada a mi_stat_f()
+ *
+ * @param camino ruta del directorio o fichero
+ * @param p_stat estructura de datos a la cual volcar la metainformación
+ * @return posición del inodo en caso correcto,
+ *         FALLO/código de error en caso contrario.
+ */
 int mi_stat(const char *camino, stat_t *p_stat) {
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
@@ -543,7 +577,7 @@ int mi_unlink(const char *camino) {
         mostrar_error_buscar_entrada(ret);
         return ret;
     }
-
+    //printf("mi_unlink -> input camino: %s\n", camino);
     DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
     DEBUG(2, "p_inodo: %u", p_inodo);
     DEBUG(2, "p_entrada: %u", p_entrada);
