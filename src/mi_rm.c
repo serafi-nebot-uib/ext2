@@ -15,7 +15,7 @@ void syntax(const char *const name) {
 }
 
 int rm_function(const char *ruta, const bool r) {
-    int rtrn;
+    int rtrn = 0;
     char str[TAMBUFFER] = { 0 };
     int n = mi_dir(ruta, str, 0);
     if (n < 0) return FALLO;

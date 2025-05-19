@@ -373,6 +373,13 @@ int mi_stat(const char *camino, stat_t *p_stat) {
     return mi_stat_f(p_inodo, p_stat) == EXITO ? p_inodo : FALLO;
 }
 
+/**
+ * Obtener entrada en la cache.
+ *
+ * @param camino ruta de la entrada a buscar en la cache
+ * @param p_inodo puntero a la variable dónde se va a almacenar el número de inodo asociado a camino
+ * @return 0 si se ha encontrado la entrada especificada, -1 en caso contrario
+ */
 int entrada_cache_get(const char *const camino, unsigned int *const p_inodo) {
 #if CACHE == 0
     return -1;
@@ -405,6 +412,12 @@ int entrada_cache_get(const char *const camino, unsigned int *const p_inodo) {
 #endif
 }
 
+/**
+ * Insertar entrada en la cache.
+ *
+ * @param camino ruta de la entrada a insertar en la cache
+ * @param p_inodo número de inodo asociado a la ruta especificada
+ */
 void entrada_cache_put(const char *const camino, unsigned int p_inodo) {
 #if CACHE > 0
 
