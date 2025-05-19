@@ -14,6 +14,9 @@
 #include <string.h>
 #include <sys/time.h>
 
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#define max(a, b) ((a) > (b) ? (a) : (b))
+
 void hexdump_raw(const void * const buff, size_t offset, const size_t size, const uint32_t addr_start, const uint16_t col_cnt, const uint16_t col_sep, FILE *file);
 void hexdump_col(const void * const buff, size_t offset, const size_t size, const uint32_t addr_start, const uint16_t col_cnt, const uint16_t col_sep);
 void hexdump(const void * const buff, size_t offset, const size_t size, const uint32_t addr_start);

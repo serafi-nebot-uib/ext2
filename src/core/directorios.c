@@ -192,6 +192,7 @@ int mi_creat(const char *camino, unsigned char permisos) {
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 1, permisos);
     if (ret != EXITO) return ret;
 
+    DEBUG(2, "camino: %s; permisos: %hhu", camino, permisos);
     DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
     DEBUG(2, "p_inodo: %u", p_inodo);
     DEBUG(2, "p_entrada: %u", p_entrada);
@@ -288,13 +289,13 @@ int mi_dir(const char *camino, char *buffer, char flag) {
 
     if (n == 0) return 0;
 
-    //TODO: mirar mem quina funció és sa que fa que s'imprimeixin es dos inodes 0
     entrada_t entradas[ENTRADAS_IN_BLOCK];
-    if (mi_read_f(p_inodo, entradas, 0, BLOCKSIZE) == FALLO) return FALLO;
     for (size_t i = 0; i < n; i++) {
-        DEBUG(2, "entrada %zu -> ninodo: %u; nombre: %s", i, entradas[i].ninodo, entradas[i].nombre);
-        if (leer_inodo(entradas[i].ninodo, &inode) == FALLO) return FALLO;
-        mi_dir_entrada(entradas[i].nombre, &inode, buffer, flag);
+        size_t idx = i % ENTRADAS_IN_BLOCK;
+        if (idx == 0 && mi_read_f(p_inodo, entradas, i * sizeof(entrada_t), BLOCKSIZE) == FALLO) return FALLO;
+        DEBUG(1, "entrada %zu -> ninodo: %u; nombre: %s", i, entradas[idx].ninodo, entradas[idx].nombre);
+        if (leer_inodo(entradas[idx].ninodo, &inode) == FALLO) return FALLO;
+        mi_dir_entrada(entradas[idx].nombre, &inode, buffer, flag);
     }
     strcat(buffer, "\n");
 
@@ -645,4 +646,3 @@ int mi_unlink(const char *camino) {
                                      escribir_inodo()
 
  */
-
