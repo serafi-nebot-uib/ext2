@@ -236,11 +236,12 @@ void mi_dir_entrada(const char *const nombre, inodo_t *inode, char *buffer, char
 }
 
 /**
- * Función que devuelve un  buffer el contenido de un directorio pasado por parámetro
+ * Función que devuelve un buffer con el contenido de un directorio pasado por parámetro
  *
  * @param camino ruta del directorio a imprimir
  * @param buffer posición de memoria donde se almacena el contenido de un directorio
  * @param flag permite seleccionar el formato de impresión
+ * @return número de entradas en el directorio
  */
 int mi_dir(const char *camino, char *buffer, char flag) {
     superbloque_t sb;
@@ -270,7 +271,7 @@ int mi_dir(const char *camino, char *buffer, char flag) {
         strcat(buffer, "\n");
     }
 
-    if (flag) {
+    if (flag && n > 0) {
         strcat(buffer, "Tipo\tModo\tmTime\t\t\tTamaño\tNombre\n");
         memset(line, '-', TAMFILA);
         line[64 - 1] = 0;
@@ -578,71 +579,3 @@ int mi_unlink(const char *camino) {
     }
     return EXITO;
 }
-
-/**
- * Escribir n bytes a los datos de un inodo.
- *
- * @param ninodo número de inodo al que escribir
- * @param buf_original buffer de datos origen; de dónde se van a volcar los datos
- * @param offset número de byte del inodo del cual empezar a escribir
- * @param nbytes número de bytes a escribir
- * @return número de bytes escritos, FALLO en caso de error
- */
-
-/**
- * Lee los nbytes de los datos de un inodo a partir de un offset dado
- *
- * @param ninodo número de inodo del que leer
- * @param buf_original buffer de datos destino; dónde se van a volcar los datos
- * @param offset número de byte del inodo del cual empezar a leer
- * @param nbytes número de bytes a escribir
- * @return número de bytes leídos, FALLO en caso de error
- */
-
-/**
- * Truncar inodo a partir de un número de bytes.
- *
- * @param ninodo número de inodo que truncar
- * @param nbytes número de bytes que deben quedar en el inodo
- * @return número de bloques liberados o FALLO en caso de error
- */
-
-/**
- * Busca y crea un archivo o directorio dentro del inodo padre
- *
- * @param camino_parcial ruta del archivo o directorio a buscar o crear
- * @param p_inodo_dir número de inodo del directorio padre dentro del array de inodos
- * @param p_inodo número de inodo al que está asociado el nombre de la entrada buscada
- * @param p_entrada número de entrada dentro del inodo *p_inodo_dir que lo contiene
- * @param reservar si vale 1, y este no existe, crea el archivo o directorio;
- *                 si vale 0, solo busca su existencia dentro del sistema
- * @param permisos en caso de que reservar valga 1, el archivo o directorio se creará con los permisos especificados
- * @return valor entero que representa el tipo de salida de la función, error o éxito
- */
-
-/*
-   buscar_entrada(camino2), reservar 0
- |->P_entrada
-   V
-   P.inodo
-   leer_inodo()
-   tipo = 'd' -> tamEnBytesLog == 0 ?
-   leer_inodo(P_inodo_dir)
-   nº entradas = tamEnByresLog / sizeof(entrada)
-   mi_truncar_f(...)
-   tamEnBytesLog()
-
-   _________
- |________|
- |________|<---.
- |________|    |  Movemos el la última entrada del inodo directorio a la posicion del inodo que queremos eliminar,
- |________|----'  se sobreescribe, posteriormente se borra la última
-
-   P_inodo:
-   nlinks--;
-   nlinks == 0 ?  si vale 0: liberar_inodo(p_inodo)
-                  si no vale 0, quiere decir que hay algun camino/enlace a ese inodo:
-                                     ctime
-                                     escribir_inodo()
-
- */
