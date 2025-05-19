@@ -3,6 +3,7 @@
 * AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
+#include "util/helper.h"
 #include "core/directorios.h"
 
 #define TAM_BUFFER (BLOCKSIZE * 2)
@@ -51,7 +52,7 @@ int main(int argc, char *argv[]) {
                 offset += leidos;
                 memset(buffer, 0, TAM_BUFFER);
             }
-            printf("\n\nTotal_leidos %d", total_leidos);
+            fprintf(stderr, "\n\nTotal_leidos %d\n", total_leidos);
         }
     }
 
@@ -62,4 +63,3 @@ int main(int argc, char *argv[]) {
 
     return ret;
 }
-
