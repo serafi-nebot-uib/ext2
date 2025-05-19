@@ -252,7 +252,7 @@ echo
 echo -e "\x1B[38;2;17;245;120m######################################################################\x1b[0m"
 echo -e "\x1B[38;2;17;245;120m$ ./build/mi_rmdir disco /dir2/dir21/ #o mi_rm\x1b[0m"
 echo -e "\x1B[38;2;17;245;120m#Error: El directorio /dir2/dir21/ no está vacío\x1b[0m"
-./build/mi_rmdir disco /dir2/dir21/ 
+./build/mi_rm disco /dir2/dir21/ 
 echo
 echo -e "\x1B[38;2;17;245;120m$ ./build/mi_rm disco /dir2/dir21/fic211\x1b[0m"
 ./build/mi_rm disco /dir2/dir21/fic211
@@ -273,7 +273,7 @@ echo -e "\x1B[38;2;17;245;120m$ ./build/mi_rm disco /dir2/dir21/fic211 #ya no ex
 ./build/mi_rm disco /dir2/dir21/fic211
 echo
 echo -e "\x1B[38;2;17;245;120m$ ./build/mi_rmdir disco /dir2/dir21/ #o mi_rm\x1b[0m"
-./build/mi_rmdir disco /dir2/dir21/
+./build/mi_rm disco /dir2/dir21/
 echo
 echo -e "\x1B[38;2;17;245;120m$ ./build/mi_ls -l disco /dir2/\x1b[0m"
 ./build/mi_ls -l disco /dir2/
@@ -329,7 +329,7 @@ echo
 echo -e "\x1B[38;2;17;245;120m######################################################################\x1b[0m"
 echo -e "\x1B[38;2;17;245;120mEliminamos el subdirectorio sd3 de dir3\x1b[0m"
 echo -e "\x1B[38;2;17;245;120m$ ./build/mi_rmdir disco /dir3/sd3/\x1b[0m"
-./build/mi_rmdir disco /dir3/sd3/
+./build/mi_rm disco /dir3/sd3/
 echo
 echo -e "\x1B[38;2;17;245;120m"
 echo "             /"

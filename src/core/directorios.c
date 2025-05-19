@@ -550,7 +550,7 @@ int mi_unlink(const char *camino) {
     inodo_t inodo, inodo_dir;
     if (leer_inodo(p_inodo, &inodo) == FALLO) return FALLO;
     if (inodo.tipo == 'd' && inodo.tamEnBytesLog > 0) {
-        ERROR("El directorio %s no está vacío", camino);
+        ERROR("el directorio %s no está vacío", camino);
         return FALLO; // Si se trata de un directorio y no está vacío entonces no se puede borrar
     }
     //if (!INODE_P(inodo.permisos, INODE_P_READ)) return ERROR_PERMISO_LECTURA; // Necessari?
@@ -576,6 +576,7 @@ int mi_unlink(const char *camino) {
         inodo.ctime = time(NULL);
         if (escribir_inodo(p_inodo, &inodo) == FALLO) return FALLO;
     }
+
     return EXITO;
 }
 
