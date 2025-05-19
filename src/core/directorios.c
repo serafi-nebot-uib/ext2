@@ -44,6 +44,14 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo) {
     return EXITO;
 }
 
+/**
+ *  Extrae, a partir de un string cuyo contenido es la ruta de un archivo o directorio,
+ *  el contenido final del camino
+ *
+ * @param camino puntero al string con la ruta a extraer
+ * @param final puntero al string donde se escribirá el trozo final del camino
+ * @return EXITO si se extrae el valor correctamente, FALLO en caso contrario
+ */
 int extraer_camino_final(const char *camino, char *const final) {
     if (camino == NULL || final == NULL) return FALLO;
 
@@ -206,6 +214,14 @@ int mi_creat(const char *camino, unsigned char permisos) {
     return EXITO;
 }
 
+/**
+ * Función auxiliar que añade entradas y formatea el buffer de la función mi_dir
+ *
+ * @param nombre nombre del fichero / directorio a añadir al buffer
+ * @param inodo_t inodo del fichero / directorio a añadir al buffer
+ * @param buffer buffer sobre el cual se está trabajando
+ * @param flag permite seleccionar el modo de formateo del buffer
+ */
 void mi_dir_entrada(const char *const nombre, inodo_t *inode, char *buffer, char flag) {
     char tmp[80] = { 0 };
     const char *const color = inode->tipo == 'd' ? BLUE : GREEN;
@@ -236,16 +252,19 @@ void mi_dir_entrada(const char *const nombre, inodo_t *inode, char *buffer, char
 }
 
 /**
- * Función que devuelve un  buffer el contenido de un directorio pasado por parámetro
+ * Función que devuelve un buffer con el contenido de un directorio pasado por parámetro
  *
  * @param camino ruta del directorio a imprimir
  * @param buffer posición de memoria donde se almacena el contenido de un directorio
  * @param flag permite seleccionar el formato de impresión
+ * @return Número de entradas del directorio en caso de éxito,
+ *         FALLO/código de error en caso contrario.
  */
 int mi_dir(const char *camino, char *buffer, char flag) {
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
+    printf("camino: %s\n", camino);
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
     if (ret < 0) return ret;
@@ -270,7 +289,7 @@ int mi_dir(const char *camino, char *buffer, char flag) {
         strcat(buffer, "\n");
     }
 
-    if (flag) {
+    if (flag && n > 0) {
         strcat(buffer, "Tipo\tModo\tmTime\t\t\tTamaño\tNombre\n");
         memset(line, '-', TAMFILA);
         line[64 - 1] = 0;
@@ -283,7 +302,7 @@ int mi_dir(const char *camino, char *buffer, char flag) {
         char final[strlen(camino)];
         if (extraer_camino_final(camino, final) == FALLO) return FALLO;
         mi_dir_entrada(final, &inode, buffer, flag);
-        strcat(buffer, "\n");
+        strcat(buffer, "\n" RESET);
         return 1;
     }
 
@@ -302,6 +321,13 @@ int mi_dir(const char *camino, char *buffer, char flag) {
     return n;
 }
 
+/**
+ * Cambia los permisos de un fichero o directorio
+ *
+ * @param camino ruta del directorio o fichero
+ * @param permisos nivel de permisos a establecer (en octal)
+ * @return EXITO en caso correcto, FALLO/código de error en caso contrario.
+ */
 int mi_chmod(const char *camino, unsigned char permisos) {
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
@@ -320,6 +346,15 @@ int mi_chmod(const char *camino, unsigned char permisos) {
     return mi_chmod_f(p_inodo, permisos);
 }
 
+/**
+ * Obtiene el inodo asociado a una entrada pasada por parámetro
+ * y obtiene sus stats mediante una posterior llamada a mi_stat_f()
+ *
+ * @param camino ruta del directorio o fichero
+ * @param p_stat estructura de datos a la cual volcar la metainformación
+ * @return posición del inodo en caso correcto,
+ *         FALLO/código de error en caso contrario.
+ */
 int mi_stat(const char *camino, stat_t *p_stat) {
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
@@ -542,7 +577,7 @@ int mi_unlink(const char *camino) {
         mostrar_error_buscar_entrada(ret);
         return ret;
     }
-
+    //printf("mi_unlink -> input camino: %s\n", camino);
     DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
     DEBUG(2, "p_inodo: %u", p_inodo);
     DEBUG(2, "p_entrada: %u", p_entrada);
@@ -579,71 +614,3 @@ int mi_unlink(const char *camino) {
 
     return EXITO;
 }
-
-/**
- * Escribir n bytes a los datos de un inodo.
- *
- * @param ninodo número de inodo al que escribir
- * @param buf_original buffer de datos origen; de dónde se van a volcar los datos
- * @param offset número de byte del inodo del cual empezar a escribir
- * @param nbytes número de bytes a escribir
- * @return número de bytes escritos, FALLO en caso de error
- */
-
-/**
- * Lee los nbytes de los datos de un inodo a partir de un offset dado
- *
- * @param ninodo número de inodo del que leer
- * @param buf_original buffer de datos destino; dónde se van a volcar los datos
- * @param offset número de byte del inodo del cual empezar a leer
- * @param nbytes número de bytes a escribir
- * @return número de bytes leídos, FALLO en caso de error
- */
-
-/**
- * Truncar inodo a partir de un número de bytes.
- *
- * @param ninodo número de inodo que truncar
- * @param nbytes número de bytes que deben quedar en el inodo
- * @return número de bloques liberados o FALLO en caso de error
- */
-
-/**
- * Busca y crea un archivo o directorio dentro del inodo padre
- *
- * @param camino_parcial ruta del archivo o directorio a buscar o crear
- * @param p_inodo_dir número de inodo del directorio padre dentro del array de inodos
- * @param p_inodo número de inodo al que está asociado el nombre de la entrada buscada
- * @param p_entrada número de entrada dentro del inodo *p_inodo_dir que lo contiene
- * @param reservar si vale 1, y este no existe, crea el archivo o directorio;
- *                 si vale 0, solo busca su existencia dentro del sistema
- * @param permisos en caso de que reservar valga 1, el archivo o directorio se creará con los permisos especificados
- * @return valor entero que representa el tipo de salida de la función, error o éxito
- */
-
-/*
-   buscar_entrada(camino2), reservar 0
- |->P_entrada
-   V
-   P.inodo
-   leer_inodo()
-   tipo = 'd' -> tamEnBytesLog == 0 ?
-   leer_inodo(P_inodo_dir)
-   nº entradas = tamEnByresLog / sizeof(entrada)
-   mi_truncar_f(...)
-   tamEnBytesLog()
-
-   _________
- |________|
- |________|<---.
- |________|    |  Movemos el la última entrada del inodo directorio a la posicion del inodo que queremos eliminar,
- |________|----'  se sobreescribe, posteriormente se borra la última
-
-   P_inodo:
-   nlinks--;
-   nlinks == 0 ?  si vale 0: liberar_inodo(p_inodo)
-                  si no vale 0, quiere decir que hay algun camino/enlace a ese inodo:
-                                     ctime
-                                     escribir_inodo()
-
- */

@@ -1,3 +1,7 @@
+/**************************************************************************
+* FILENAME: mi_escribir_varios.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
 #include "core/directorios.h"
 
 

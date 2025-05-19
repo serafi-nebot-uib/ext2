@@ -1,6 +1,6 @@
 /**************************************************************************
-* filename: mi_stat.c
-* author: serafí nebot, ignasi paredes, jaume galmés
+* FILENAME: mi_stat.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
 **************************************************************************/
 
 #include "core/directorios.h"
@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     int p_inode = mi_stat(path, &stat);
 
     if (p_inode > 0) {
-        printf("Nº de inodo: %u\n", p_inode); 
+        printf("Nº de inodo: %u\n", p_inode);
         printf("tipo: %c\n", stat.tipo);
         printf("permisos: %hhu\n", stat.permisos);
 
