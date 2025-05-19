@@ -207,7 +207,7 @@ int mi_creat(const char *camino, unsigned char permisos) {
 }
 
 void mi_dir_entrada(const char *const nombre, inodo_t *inode, char *buffer, char flag) {
-    char tmp[24] = { 0 };
+    char tmp[80] = { 0 };
     const char *const color = inode->tipo == 'd' ? BLUE : GREEN;
     if (flag) {
         strncat(buffer, (const char *)&inode->tipo, 1);
@@ -218,10 +218,10 @@ void mi_dir_entrada(const char *const nombre, inodo_t *inode, char *buffer, char
         strcat(buffer, "\t");
         struct tm *tm;
         tm = localtime(&inode->mtime);
-        sprintf(tmp, "%d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min,  tm->tm_sec);
+        snprintf(tmp, sizeof(tmp), "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min,  tm->tm_sec);
         strcat(buffer, tmp);
         strcat(buffer, "\t");
-        sprintf(tmp, "%u", inode->tamEnBytesLog);
+        snprintf(tmp, sizeof(tmp), "%u", inode->tamEnBytesLog);
         strcat(buffer, tmp);
         strcat(buffer, "\t");
         strcat(buffer, color);
@@ -264,8 +264,8 @@ int mi_dir(const char *camino, char *buffer, char flag) {
 
     if (inode.tipo == 'd') {
         strcat(buffer, "Total: ");
-        char tmp[8] = {0};
-        sprintf(tmp, "%lu", n);
+        char tmp[24] = {0};
+        snprintf(tmp, sizeof(tmp), "%lu", n);
         strcat(buffer, tmp);
         strcat(buffer, "\n");
     }
