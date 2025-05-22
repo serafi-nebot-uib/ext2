@@ -69,6 +69,8 @@ typedef union {
     char padding[INODOSIZE]; // padding extra para que cada inodo ocupe exactamente 128 bytes
 } inodo_t;
 
+int sb_read(superbloque_t *const sb);
+int sb_write(superbloque_t *const sb);
 int tamMB(unsigned int nbloques);
 int tamAI(unsigned int ninodos);
 int initSB(unsigned int nbloques, unsigned int ninodos);

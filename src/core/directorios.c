@@ -88,7 +88,7 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
     if (camino_parcial == NULL || p_inodo_dir == NULL || p_inodo == NULL || p_entrada == NULL) return FALLO;
 
     superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO; // lee el superbloque
+    if (sb_read(&sb) == FALLO) return FALLO;
 
     if (strcmp(camino_parcial, "/") == 0) { // si el camino sólo contiene la raíz (/)
         *p_inodo = sb.posInodoRaiz;
@@ -194,7 +194,7 @@ void mostrar_error_buscar_entrada(int error) {
  */
 int mi_creat(const char *camino, unsigned char permisos) {
     superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO;
+    if (sb_read(&sb) == FALLO) return FALLO;
 
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 1, permisos);
@@ -256,7 +256,7 @@ void mi_dir_entrada(const char *const nombre, inodo_t *inode, char *buffer, char
  */
 int mi_dir(const char *camino, char *buffer, char flag) {
     superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO;
+    if (sb_read(&sb) == FALLO) return FALLO;
 
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
@@ -323,7 +323,7 @@ int mi_dir(const char *camino, char *buffer, char flag) {
  */
 int mi_chmod(const char *camino, unsigned char permisos) {
     superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO;
+    if (sb_read(&sb) == FALLO) return FALLO;
 
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
@@ -350,7 +350,7 @@ int mi_chmod(const char *camino, unsigned char permisos) {
  */
 int mi_stat(const char *camino, stat_t *p_stat) {
     superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO;
+    if (sb_read(&sb) == FALLO) return FALLO;
 
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
@@ -458,7 +458,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
 
     if (entrada_cache_get(camino, &p_inodo) < 0) {
         superbloque_t sb;
-        if (bread(posSB, &sb) == FALLO) return FALLO;
+        if (sb_read(&sb) == FALLO) return FALLO;
 
         p_inodo_dir = sb.posInodoRaiz;
         int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
@@ -490,7 +490,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     if (entrada_cache_get(camino, &p_inodo) < 0) {
         // DEBUG(1, "\"%s\" not found in entrada cache", camino);
         superbloque_t sb;
-        if (bread(posSB, &sb) == FALLO) return FALLO;
+        if (sb_read(&sb) == FALLO) return FALLO;
 
         p_inodo_dir = sb.posInodoRaiz;
         int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
@@ -525,7 +525,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
  */
 int mi_link(const char *camino1, const char *camino2) {
     superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO;
+    if (sb_read(&sb) == FALLO) return FALLO;
 
     unsigned int p_inodo_dir_1 = sb.posInodoRaiz, p_inodo_1 = 0, p_entrada_1 = 0;
     int ret = buscar_entrada(camino1, &p_inodo_dir_1, &p_inodo_1, &p_entrada_1, 0, 0);
@@ -575,7 +575,7 @@ int mi_link(const char *camino1, const char *camino2) {
  */
 int mi_unlink(const char *camino) {
     superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO;
+    if (sb_read(&sb) == FALLO) return FALLO;
 
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
