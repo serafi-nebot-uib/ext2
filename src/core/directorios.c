@@ -123,7 +123,7 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
         if (strcmp(inicial, (entrada = bloque_entradas[entrada_idx]).nombre) == 0) break;
     }
 
-    if (inicial != entrada.nombre && num_entrada_inodo == cant_entradas_inodo) { // la entrada no existe
+    if (strcmp(inicial, entrada.nombre) != 0 && num_entrada_inodo == cant_entradas_inodo) { // la entrada no existe
         if (reservar == 0) return ERROR_NO_EXISTE_ENTRADA_CONSULTA; // modo consulta. Como no existe retornamos error
 
         // modo escritura, creamos la entrada en el directorio referenciado por *p_inodo_dir
@@ -204,12 +204,6 @@ int mi_creat(const char *camino, unsigned char permisos) {
     DEBUG(2, "p_inodo_dir: %u", p_inodo_dir);
     DEBUG(2, "p_inodo: %u", p_inodo);
     DEBUG(2, "p_entrada: %u", p_entrada);
-
-    inodo_t inodo_dir, inodo;
-    if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO || leer_inodo(p_inodo, &inodo)) return FALLO;
-    if (!INODE_P(inodo_dir.permisos, INODE_P_WRITE)) return ERROR_PERMISO_ESCRITURA;
-    if (!INODE_P(inodo_dir.permisos, INODE_P_READ)) return ERROR_PERMISO_LECTURA; // necessary?
-    if (inodo_dir.tipo != 'd') return ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO;
 
     return EXITO;
 }
@@ -600,21 +594,17 @@ int mi_unlink(const char *camino) {
         ERROR("el directorio %s no está vacío", camino);
         return FALLO; // Si se trata de un directorio y no está vacío entonces no se puede borrar
     }
-    //if (!INODE_P(inodo.permisos, INODE_P_READ)) return ERROR_PERMISO_LECTURA; // Necessari?
+    if (!INODE_P(inodo.permisos, INODE_P_WRITE)) return ERROR_PERMISO_ESCRITURA;
     if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO) return FALLO;
     int num_entradas = inodo_dir.tamEnBytesLog / sizeof(entrada_t);
     int ult_entrada = num_entradas - 1;
 
-    if (p_entrada == ult_entrada) {
-        if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(entrada_t)) == FALLO) return FALLO;
-    } else {
+    if (p_entrada != ult_entrada) {
         entrada_t entrada_aux;
-
         if (mi_read_f(p_inodo_dir, &entrada_aux, ult_entrada * sizeof(entrada_t), sizeof(entrada_t)) == FALLO) return FALLO;
         if (mi_write_f(p_inodo_dir, &entrada_aux, p_entrada * sizeof(entrada_t), sizeof(entrada_t)) == FALLO) return FALLO;
-        if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(entrada_t)) == FALLO) return FALLO;
     }
-    // TODO: avoid mi_truncar_f redundancy
+    if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(entrada_t)) == FALLO) return FALLO;
 
     inodo.nlinks--;
     if (inodo.nlinks == 0) {
