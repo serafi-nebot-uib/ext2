@@ -4,7 +4,7 @@ BUILD_DIR=build
 
 CC=gcc
 CFLAGS=-c -g -Wall -std=gnu17 -I$(SRC_DIR)
-#LDFLAGS=-pthread
+LDFLAGS=-pthread
 
 CACHE ?= 0
 CACHE_SIZE ?= 3

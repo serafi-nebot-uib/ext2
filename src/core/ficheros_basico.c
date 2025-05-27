@@ -730,9 +730,7 @@ int mi_truncar_f(unsigned int ninodo, unsigned int nbytes) {
     inodo_t inodo;
     if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO;
     if (!INODE_P(inodo.permisos, INODE_P_WRITE)) return FALLO; // comprobar que el inodo tiene permisos de escritura
-    if (nbytes > inodo.tamEnBytesLog)
-        return 0; // si nbytes es mayor al número de bytes en el inodo ya podemos
-                  // considerar el inodo como truncado
+    if (nbytes > inodo.tamEnBytesLog) return 0; // si nbytes es mayor al número de bytes en el inodo ya podemos considerar el inodo como truncado
 
     unsigned int primerBL = nbytes / BLOCKSIZE;
     if (nbytes % BLOCKSIZE != 0) primerBL++;

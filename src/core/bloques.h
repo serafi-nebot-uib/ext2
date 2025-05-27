@@ -15,12 +15,15 @@
 #include <unistd.h>   // SEEK_SET, read(), write(), open(), close(), lseek()
 
 #include <util/logging.h>
+#include <util/semaforo_mutex_posix.h>
 
 #define BLOCKSIZE 1024 // bytes
 
 #define EXITO   0
 #define FALLO   -1
 
+void mi_waitSem();
+void mi_signalSem();
 int bmount(const char *camino);
 int bumount();
 int bwrite(unsigned int nbloque, const void *buf);

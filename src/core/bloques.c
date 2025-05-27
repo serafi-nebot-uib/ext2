@@ -4,12 +4,26 @@
 **************************************************************************/
 
 #include "bloques.h"
+#include <semaphore.h>
 
 // descriptor del fichero actual
 static int fd = 0;
+static sem_t *mutex;
 
 // modo de creación de ficheros: (-rw-rw-rw-)
 #define FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
+
+static unsigned int inside_sc = 0;
+
+void mi_waitSem() {
+    if (!inside_sc) waitSem(mutex);
+    inside_sc++;
+}
+
+void mi_signalSem() {
+    inside_sc--;
+    if (!inside_sc) signalSem(mutex);
+}
 
 /**
  * Montar el dispositivo virtual abriendo/creando un fichero
@@ -18,6 +32,10 @@ static int fd = 0;
  * @return descriptor del fichero creado, FALLO si hay error
  */
 int bmount(const char *camino) {
+    if (!mutex) {  // el semáforo es único en el sistema y sólo se ha de inicializar 1 vez (padre)
+        mutex = initSem();
+        if (mutex == NULL) return -1;
+    }
     int ret = FALLO; // contiene el valor de retorno
     // se cambia la máscara de creación de ficheros a 000 para que se permita qualquier tipo de modo
     // esto es necesario ya que en algunos sistemas la máscara por defecto = 0022,
@@ -40,6 +58,7 @@ int bmount(const char *camino) {
  * @return EXITO si se ha desmontado correctamente el dispositivo virtual, FALLO en caso contrario
  */
 int bumount() {
+    deleteSem();
     if (close(fd) >= 0) return EXITO;
     ERRSYS("close");
     return FALLO;

@@ -193,11 +193,16 @@ void mostrar_error_buscar_entrada(int error) {
  * @return valor entero que representa el tipo de salida de la función, error o éxito
  */
 int mi_creat(const char *camino, unsigned char permisos) {
+    mi_waitSem();
     superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO;
+    if (bread(posSB, &sb) == FALLO) {
+        mi_signalSem();
+        return FALLO;
+    }
 
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 1, permisos);
+    mi_signalSem();
     if (ret != EXITO) return ret;
 
     DEBUG(2, "camino: %s; permisos: %hhu", camino, permisos);
@@ -258,6 +263,7 @@ int mi_dir(const char *camino, char *buffer, char flag) {
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
+    // TODO: does mi_dir() have to update inode.atime?
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
     if (ret < 0) return ret;
@@ -524,13 +530,18 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
  * @return EXITO si se crea el enlace correctamente, código de error en caso contrario
  */
 int mi_link(const char *camino1, const char *camino2) {
+    mi_waitSem();
     superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO;
+    if (bread(posSB, &sb) == FALLO) {
+        mi_signalSem();
+        return FALLO;
+    }
 
     unsigned int p_inodo_dir_1 = sb.posInodoRaiz, p_inodo_1 = 0, p_entrada_1 = 0;
     int ret = buscar_entrada(camino1, &p_inodo_dir_1, &p_inodo_1, &p_entrada_1, 0, 0);
     if (ret < 0) {
         mostrar_error_buscar_entrada(ret);
+        mi_signalSem();
         return ret;
     }
 
@@ -539,14 +550,24 @@ int mi_link(const char *camino1, const char *camino2) {
     DEBUG(2, "p_entrada_1: %u", p_entrada_1);
 
     inodo_t inodo_1;
-    if (leer_inodo(p_inodo_1, &inodo_1) == FALLO) return FALLO;
-    if (inodo_1.tipo != 'f') return FALLO;
-    if (!INODE_P(inodo_1.permisos, INODE_P_READ)) return ERROR_PERMISO_LECTURA;
+    if (leer_inodo(p_inodo_1, &inodo_1) == FALLO) {
+        mi_signalSem();
+        return FALLO;
+    }
+    if (inodo_1.tipo != 'f') {
+        mi_signalSem();
+        return FALLO;
+    }
+    if (!INODE_P(inodo_1.permisos, INODE_P_READ)) {
+        mi_signalSem();
+        return ERROR_PERMISO_LECTURA;
+    }
 
     unsigned int p_inodo_dir_2 = sb.posInodoRaiz, p_inodo_2 = 0, p_entrada_2 = 0;
     ret = buscar_entrada(camino2, &p_inodo_dir_2, &p_inodo_2, &p_entrada_2, 1, 6);
     if (ret < 0) {
         mostrar_error_buscar_entrada(ret);
+        mi_signalSem();
         return ret;
     }
 
@@ -555,16 +576,25 @@ int mi_link(const char *camino1, const char *camino2) {
     DEBUG(2, "p_entrada_2: %u", p_entrada_2);
 
     entrada_t entrada_2;
-    if (mi_read_f(p_inodo_dir_2, &entrada_2, p_entrada_2 * sizeof(entrada_2), sizeof(entrada_2)) == FALLO) return FALLO;
+    if (mi_read_f(p_inodo_dir_2, &entrada_2, p_entrada_2 * sizeof(entrada_2), sizeof(entrada_2)) == FALLO) {
+        mi_signalSem();
+        return FALLO;
+    }
     entrada_2.ninodo = p_inodo_1;
-    if (mi_write_f(p_inodo_dir_2, &entrada_2, p_entrada_2 * sizeof(entrada_2), sizeof(entrada_2)) == FALLO) return FALLO;
-    if (liberar_inodo(p_inodo_2) == FALLO) return FALLO;
+    if (mi_write_f(p_inodo_dir_2, &entrada_2, p_entrada_2 * sizeof(entrada_2), sizeof(entrada_2)) == FALLO) {
+        mi_signalSem();
+        return FALLO;
+    }
+    if (liberar_inodo(p_inodo_2) == FALLO) {
+        mi_signalSem();
+        return FALLO;
+    }
 
     inodo_1.nlinks++;
     inodo_1.ctime = time(NULL);
-    if (escribir_inodo(p_inodo_1, &inodo_1) == FALLO) return FALLO;
-
-    return EXITO;
+    ret = escribir_inodo(p_inodo_1, &inodo_1);
+    mi_signalSem();
+    return ret == FALLO ? FALLO : EXITO;
 }
 
 /**
@@ -574,13 +604,18 @@ int mi_link(const char *camino1, const char *camino2) {
  * @return EXITO si se borra correctamente, código de error en caso contrario
  */
 int mi_unlink(const char *camino) {
+    mi_waitSem();
     superbloque_t sb;
-    if (bread(posSB, &sb) == FALLO) return FALLO;
+    if (bread(posSB, &sb) == FALLO) {
+        mi_signalSem();
+        return FALLO;
+    }
 
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
     if (ret < 0) {
         mostrar_error_buscar_entrada(ret);
+        mi_signalSem();
         return ret;
     }
     //printf("mi_unlink -> input camino: %s\n", camino);
@@ -589,30 +624,56 @@ int mi_unlink(const char *camino) {
     DEBUG(2, "p_entrada: %u", p_entrada);
 
     inodo_t inodo, inodo_dir;
-    if (leer_inodo(p_inodo, &inodo) == FALLO) return FALLO;
+    if (leer_inodo(p_inodo, &inodo) == FALLO) {
+        mi_signalSem();
+        return FALLO;
+    }
     if (inodo.tipo == 'd' && inodo.tamEnBytesLog > 0) {
         ERROR("el directorio %s no está vacío", camino);
+        mi_signalSem();
         return FALLO; // Si se trata de un directorio y no está vacío entonces no se puede borrar
     }
-    if (!INODE_P(inodo.permisos, INODE_P_WRITE)) return ERROR_PERMISO_ESCRITURA;
-    if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO) return FALLO;
+    if (!INODE_P(inodo.permisos, INODE_P_WRITE)) {
+        mi_signalSem();
+        return ERROR_PERMISO_ESCRITURA;
+    }
+    if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO) {
+        mi_signalSem();
+        return FALLO;
+    }
     int num_entradas = inodo_dir.tamEnBytesLog / sizeof(entrada_t);
     int ult_entrada = num_entradas - 1;
 
     if (p_entrada != ult_entrada) {
         entrada_t entrada_aux;
-        if (mi_read_f(p_inodo_dir, &entrada_aux, ult_entrada * sizeof(entrada_t), sizeof(entrada_t)) == FALLO) return FALLO;
-        if (mi_write_f(p_inodo_dir, &entrada_aux, p_entrada * sizeof(entrada_t), sizeof(entrada_t)) == FALLO) return FALLO;
+        if (mi_read_f(p_inodo_dir, &entrada_aux, ult_entrada * sizeof(entrada_t), sizeof(entrada_t)) == FALLO) {
+            mi_signalSem();
+            return FALLO;
+        }
+        if (mi_write_f(p_inodo_dir, &entrada_aux, p_entrada * sizeof(entrada_t), sizeof(entrada_t)) == FALLO) {
+            mi_signalSem();
+            return FALLO;
+        }
     }
-    if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(entrada_t)) == FALLO) return FALLO;
+    if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(entrada_t)) == FALLO) {
+        mi_signalSem();
+        return FALLO;
+    }
 
     inodo.nlinks--;
     if (inodo.nlinks == 0) {
-        if (liberar_inodo(p_inodo) == FALLO) return FALLO;
+        if (liberar_inodo(p_inodo) == FALLO) {
+            mi_signalSem();
+            return FALLO;
+        }
     } else {
         inodo.ctime = time(NULL);
-        if (escribir_inodo(p_inodo, &inodo) == FALLO) return FALLO;
+        if (escribir_inodo(p_inodo, &inodo) == FALLO) {
+            mi_signalSem();
+            return FALLO;
+        }
     }
 
+    mi_signalSem();
     return EXITO;
 }
