@@ -51,7 +51,7 @@
 
 #define ERRSYS(name) ({                                                         \
     do {                                                                        \
-        fprintf(stderr, BOLD RED name ": " RESET "%s\n", strerror(errno));      \
+        fprintf(stderr, BOLD RED "%s: " RESET "%s\n", name, strerror(errno));   \
     } while (0);                                                                \
 })
 
