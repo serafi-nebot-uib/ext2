@@ -35,12 +35,12 @@ void mi_signalSem() {
  * @return descriptor del fichero creado, FALLO si hay error
  */
 int bmount(const char *camino) {
+    if (camino == NULL) return FALLO;
+
     if (!mutex) {  // el semáforo es único en el sistema y sólo se ha de inicializar 1 vez (padre)
         mutex = initSem();
         if (mutex == NULL) return FALLO;
     }
-
-    // TODO: is there a better way to write this without using goto statements?
 
     // se cambia la máscara de creación de ficheros a 000 para que se permita qualquier tipo de modo
     // esto es necesario ya que en algunos sistemas la máscara por defecto = 0022,
@@ -54,13 +54,16 @@ int bmount(const char *camino) {
     // abrir/crear el fichero con los permisos por defecto (FILE_MODE)
     if ((fd = open(camino, O_RDWR | O_CREAT, FILE_MODE)) < 0) {
         ERRSYS("open");
-        goto fail;
+        umask(mask);
+        return FALLO;
     }
 
     struct stat st;
     if (fstat(fd, &st) < 0) {
         ERRSYS("fstat");
-        goto fail;
+        if (close(fd) < 0) ERRSYS("close");
+        umask(mask);
+        return FALLO;
     }
 
     size = st.st_size;
@@ -69,23 +72,22 @@ int bmount(const char *camino) {
         if (ftruncate(fd, size) < 0) {
             ERRSYS("ftruncate");
             if (close(fd) < 0) ERRSYS("close");
-            goto fail;
+            umask(mask);
+            size = 0;
+            return FALLO;
         }
     }
 
     if ((addr = mmap(0, size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0)) == MAP_FAILED) {
         ERRSYS("mmap");
-        goto fail;
+        umask(mask);
+        size = 0;
+        addr = NULL;
+        return FALLO;
     }
 
-    umask(mask); // restaurar la antigua mascara de creación
+    umask(mask);
     return EXITO;
-
-fail:
-    umask(mask); // restaurar la antigua mascara de creación
-    size = 0;
-    addr = NULL;
-    return FALLO;
 }
 
 /**
