@@ -6,11 +6,25 @@
 
 # for CACHE FIFO/LRU use CACHE_SIZE to set a cache size (default value = 3)
 
-make clean
-CACHE=2 DEBUG=1 make
-./build/mi_mkfs disco 100000
-./build/prueba_cache_tabla disco "hola"
+# echo "##################################################################################"
+# echo "PRUEBA CACHE"
+# echo "##################################################################################"
+# make clean
+# CACHE=1 DEBUG=1 ./test/test9.sh
 
+# echo ""
+# echo "##################################################################################"
+# echo "PRUEBA CACHE FIFO"
+# echo "##################################################################################"
+# make clean
+# CACHE=2 DEBUG=1 make
+# ./build/mi_mkfs disco 100000
+# ./build/prueba_cache_tabla disco "hola"
+
+echo ""
+echo "##################################################################################"
+echo "PRUEBA CACHE LRU"
+echo "##################################################################################"
 make clean
 CACHE=3 DEBUG=1 make
 ./build/mi_mkfs disco 100000
