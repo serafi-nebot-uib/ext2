@@ -5,10 +5,13 @@
 
 #include "bloques.h"
 #include <semaphore.h>
+#include <sys/mman.h>
 
 // descriptor del fichero actual
-static int fd = 0;
 static sem_t *mutex;
+static int fd;
+static volatile size_t size = 0;
+static void *volatile addr = NULL;
 
 // modo de creación de ficheros: (-rw-rw-rw-)
 #define FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
@@ -32,11 +35,13 @@ void mi_signalSem() {
  * @return descriptor del fichero creado, FALLO si hay error
  */
 int bmount(const char *camino) {
+    if (camino == NULL) return FALLO;
+
     if (!mutex) {  // el semáforo es único en el sistema y sólo se ha de inicializar 1 vez (padre)
         mutex = initSem();
-        if (mutex == NULL) return -1;
+        if (mutex == NULL) return FALLO;
     }
-    int ret = FALLO; // contiene el valor de retorno
+
     // se cambia la máscara de creación de ficheros a 000 para que se permita qualquier tipo de modo
     // esto es necesario ya que en algunos sistemas la máscara por defecto = 0022,
     // lo que significa que si creamos un fichero en modo 0666 se va a crear en modo:
@@ -45,11 +50,44 @@ int bmount(const char *camino) {
     //                   = 0b110100100
     //                   = 0644
     mode_t mask = umask(000);
+
     // abrir/crear el fichero con los permisos por defecto (FILE_MODE)
-    if ((fd = open(camino, O_RDWR | O_CREAT, FILE_MODE)) < 0) ERRSYS("open");
-    else ret = fd;
-    umask(mask); // restaurar la antigua mascara de creación
-    return ret;
+    if ((fd = open(camino, O_RDWR | O_CREAT, FILE_MODE)) < 0) {
+        ERRSYS("open");
+        umask(mask);
+        return FALLO;
+    }
+
+    struct stat st;
+    if (fstat(fd, &st) < 0) {
+        ERRSYS("fstat");
+        if (close(fd) < 0) ERRSYS("close");
+        umask(mask);
+        return FALLO;
+    }
+
+    size = st.st_size;
+    if (size < BLOCKSIZE) {
+        size = BLOCKSIZE;
+        if (ftruncate(fd, size) < 0) {
+            ERRSYS("ftruncate");
+            if (close(fd) < 0) ERRSYS("close");
+            umask(mask);
+            size = 0;
+            return FALLO;
+        }
+    }
+
+    if ((addr = mmap(0, size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0)) == MAP_FAILED) {
+        ERRSYS("mmap");
+        umask(mask);
+        size = 0;
+        addr = NULL;
+        return FALLO;
+    }
+
+    umask(mask);
+    return EXITO;
 }
 
 /**
@@ -59,9 +97,50 @@ int bmount(const char *camino) {
  */
 int bumount() {
     deleteSem();
-    if (close(fd) >= 0) return EXITO;
-    ERRSYS("close");
-    return FALLO;
+    int ret = EXITO;
+
+    if (munmap(addr, size) < 0) {
+        ERRSYS("munmap");
+        ret = FALLO;
+    }
+
+    if (close(fd)) {
+        ERRSYS("close");
+        ret = FALLO;
+    }
+
+    size = 0;
+    addr = NULL;
+
+    return ret;
+}
+
+/**
+ * Redimensionar el dispositivo virtual para evitar múltiples redimensionamientos durante escrituras.
+ * Recomendable llamar a esta función justo después de bmount cuando se crea un nuevo
+ * sistema de ficheros y se sabe el numero de bloques total (sz = num_bloques_total * BLOCKSIZE)
+ *
+ * @param sz nueva medida del fichero en bytes
+ * @return EXITO si se ha re-escalado 
+ */
+int resize(size_t sz) {
+    if (munmap(addr, size) < 0) {
+        ERRSYS("munmap");
+        return FALLO;
+    }
+
+    size = sz;
+    if (ftruncate(fd, size) < 0) {
+        ERRSYS("ftruncate");
+        return FALLO;
+    }
+
+    if ((addr = mmap(0, size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0)) == MAP_FAILED) {
+        ERRSYS("mmap");
+        return FALLO;
+    }
+
+    return EXITO;
 }
 
 /**
@@ -72,17 +151,10 @@ int bumount() {
  * @return número de bytes escritos, FALLO en caso de error
  */
 int bwrite(unsigned int nbloque, const void *buf) {
-    // desplaza el cursor del archivo hasta el primer byte del bloque especificado (nbloque ∗ BLOCKSIZE)
-    if (lseek(fd, nbloque * BLOCKSIZE, SEEK_SET) < 0) {
-        ERRSYS("lseek");
-        return FALLO;
-    }
-    size_t nbytes = write(fd, buf, BLOCKSIZE);
-    if (nbytes < 0) {
-        ERRSYS("write");
-        return FALLO;
-    }
-    return nbytes;
+    size_t off = nbloque * BLOCKSIZE;
+    if (off + BLOCKSIZE > size) resize(size + BLOCKSIZE);
+    memcpy(addr + off, buf, BLOCKSIZE);
+    return BLOCKSIZE;
 }
 
 /**
@@ -93,15 +165,8 @@ int bwrite(unsigned int nbloque, const void *buf) {
  * @return número de bytes leídos, FALLO en caso de error
  */
 int bread(unsigned int nbloque, void *buf) {
-    // mueve el cursor del fichero al primer byte del bloque indicado (nbloque * BLOCKSIZE)
-    if (lseek(fd, nbloque * BLOCKSIZE, SEEK_SET) < 0) {
-        ERRSYS("lseek");
-        return FALLO;
-    }
-    size_t nbytes = read(fd, buf, BLOCKSIZE);
-    if (nbytes < 0) {
-        ERRSYS("read");
-        return FALLO;
-    }
-    return nbytes;
+    size_t off = nbloque * BLOCKSIZE;
+    if (off + BLOCKSIZE > size) resize(size + BLOCKSIZE);
+    memcpy(buf, addr + off, BLOCKSIZE);
+    return BLOCKSIZE;
 }

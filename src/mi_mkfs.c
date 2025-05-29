@@ -22,6 +22,8 @@ int main(int argc, char **argv) {
     unsigned char buffer[BLOCKSIZE];
     memset(buffer, 0, BLOCKSIZE);
 
+    resize(block_cnt * BLOCKSIZE);
+
     for (int i = 0; i < block_cnt; i++) {
         if (bwrite(i, buffer) == FALLO) {
             fprintf(stderr, "error al escribir el bloque %d\n", i);
