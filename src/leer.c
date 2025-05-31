@@ -6,8 +6,8 @@
 #include "core/directorios.h"
 #include "util/helper.h"
 
-#define TAM_BUFFER (BLOCKSIZE * 2)
-// #define TAM_BUFFER 1500
+// #define TAM_BUFFER (BLOCKSIZE * 2)
+#define TAM_BUFFER 1500
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {

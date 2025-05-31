@@ -210,6 +210,12 @@ int mi_creat(const char *camino, unsigned char permisos) {
     DEBUG(2, "p_inodo: %u", p_inodo);
     DEBUG(2, "p_entrada: %u", p_entrada);
 
+    inodo_t inodo_dir, inodo;
+    if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO || leer_inodo(p_inodo, &inodo) == FALLO) return FALLO;
+    if (!INODE_P(inodo_dir.permisos, INODE_P_WRITE)) return ERROR_PERMISO_ESCRITURA;
+    if (!INODE_P(inodo_dir.permisos, INODE_P_READ)) return ERROR_PERMISO_LECTURA; // necessary?
+    if (inodo_dir.tipo != 'd') return ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO;
+
     return EXITO;
 }
 

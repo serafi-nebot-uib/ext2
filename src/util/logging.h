@@ -45,14 +45,13 @@
     do {                                                                        \
         fprintf(stderr, RED "error: " RESET);                                   \
         fprintf(stderr, __VA_ARGS__);                                           \
-        fprintf(stderr, ".\n");                                                  \
+        fprintf(stderr, ".\n");                                                 \
     } while (0);                                                                \
 })
 
 #define ERRSYS(name) ({                                                         \
     do {                                                                        \
-        fprintf(stderr, BOLD RED "%s→" name "(): " RESET RED "%s\n" RESET,      \
-                __func__, strerror(errno));                                     \
+        fprintf(stderr, BOLD RED "%s: " RESET "%s\n", name, strerror(errno));   \
     } while (0);                                                                \
 })
 
