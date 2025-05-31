@@ -10,7 +10,7 @@
 #include "core/directorios.h"
 
 #define REGMAX 500000
-#define NUMPROCESOS 2
+#define NUMPROCESOS 100
 #define NUMESCRITURAS 50
 
 typedef struct { //sizeof(struct REGISTRO): 24 bytes
@@ -22,6 +22,7 @@ typedef struct { //sizeof(struct REGISTRO): 24 bytes
 
 static uint32_t acabados = 0;
 static const char *dev_name = NULL;
+// static const char *colors[11] = { ORANGE, LBLUE, LGREEN, YELLOW, BLUE, MAGENTA, CYAN, RED, ROSE, GREEN, GRAY };
 
 void reaper() {
     pid_t ended;
@@ -30,11 +31,9 @@ void reaper() {
 }
 
 void clean_exit(int code) {
-    if (dev_name != NULL) {
-        if (bumount() == FALLO) {
-            ERROR("no se ha podido desmontar el dispositivo virtual %s", dev_name);
-            exit(FALLO);
-        }
+    if (bumount() == FALLO) {
+        ERROR("no se ha podido desmontar el dispositivo virtual %s", dev_name);
+        exit(FALLO);
     }
     exit(code);
 }
@@ -64,7 +63,10 @@ int main(int argc, char **argv) {
 
     signal(SIGCHLD, reaper);
 
+    printf("*** SIMULACIÓN DE %d PROCESOS REALIZANDO CADA UNO %d ESCRITURAS ***\n", NUMPROCESOS, NUMESCRITURAS);
+
     for (size_t i = 0; i < NUMPROCESOS; i++) {
+        // const char *const color = colors[i % (sizeof(colors) / sizeof(*colors))];
         pid_t pid = fork();
 
         if (pid == 0) {
@@ -95,6 +97,7 @@ int main(int argc, char **argv) {
                 registro.pid = getpid();
                 registro.nEscritura = j;
                 registro.nRegistro = rand() % REGMAX;
+                // printf("%sescritura %zu en %s\n" RESET, color, j, path);
                 if (mi_write(path, &registro, j * sizeof(registro), sizeof(registro)) == FALLO) {
                     ERROR("no se ha podido escribir el registro en el fichero: %s", path);
                     clean_exit(FALLO);
@@ -102,10 +105,15 @@ int main(int argc, char **argv) {
                 usleep(50000);
             }
 
+            printf("proceso %zu completadas %d escrituras en %s\n", i, NUMESCRITURAS, path);
+
             usleep(150000);
             clean_exit(EXITO);
         }
     }
 
+    while (acabados < NUMPROCESOS) pause();
+
     clean_exit(EXITO);
+    return EXITO;
 }
