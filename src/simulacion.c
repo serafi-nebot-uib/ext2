@@ -1,24 +1,5 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <sys/signal.h>
-#include <sys/types.h>
-#include <time.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <string.h>
-
 #include "core/directorios.h"
-
-#define REGMAX 500000
-#define NUMPROCESOS 100
-#define NUMESCRITURAS 50
-
-typedef struct { //sizeof(struct REGISTRO): 24 bytes
-    time_t fecha; //Precisión segundos [opcionalmente microsegundos con struct timeval]
-    pid_t pid; //PID del proceso que lo ha creado
-    int nEscritura; //Entero con el nº de escritura, de 1 a 50 (orden por tiempo)
-    int nRegistro; //Entero con el nº del registro dentro del fichero: [0..REGMAX-1] (orden por posición)
-} registro_t;
+#include "simulacion.h"
 
 static uint32_t acabados = 0;
 static const char *dev_name = NULL;
@@ -41,6 +22,7 @@ void clean_exit(int code) {
 int main(int argc, char **argv) {
     if (argc != 2) {
         ERROR("sintaxis: %s <disco>", argv[0]);
+        return FALLO;
     }
 
     dev_name = argv[1];
@@ -71,7 +53,8 @@ int main(int argc, char **argv) {
 
         if (pid == 0) {
             char path[128];
-            snprintf(path, sizeof(path), "%sproceso_PID%zu/", simdir, i);
+            pid = getpid();
+            snprintf(path, sizeof(path), "%sproceso_PID%u/", simdir, pid);
 
             r = mi_creat(path, 06);
             if (r != 0) {
@@ -94,7 +77,7 @@ int main(int argc, char **argv) {
             for (size_t j = 0; j < NUMESCRITURAS; j++) {
                 registro_t registro;
                 registro.fecha = time(NULL);
-                registro.pid = getpid();
+                registro.pid = pid;
                 registro.nEscritura = j;
                 registro.nRegistro = rand() % REGMAX;
                 // printf("%sescritura %zu en %s\n" RESET, color, j, path);
