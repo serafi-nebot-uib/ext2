@@ -8,7 +8,7 @@
 build
 tmp
 disco*
-ext*
-res*
+ext*.txt
+res*.txt
 
 __pycache__
