@@ -1,3 +1,8 @@
+/**************************************************************************
+* FILENAME: verificacion.h
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
+
 #ifndef __VERIFICACION_H__
 #define __VERIFICACION_H__
 

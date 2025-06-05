@@ -9,5 +9,6 @@ build
 tmp
 disco*
 ext*
+res*
 
 __pycache__

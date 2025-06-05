@@ -16,6 +16,8 @@
  * @return número de bytes escritos, FALLO en caso de error
  */
 int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offset, unsigned int nbytes) {
+    // TODO: as an improvement, do not wait at the very beginning and signal at the very end of the function.
+    //       this can be optimized to a lower level of granularity
     mi_waitSem();
     // obtener inodo a partir del número de inodo y comprobar que tiene permisos de escritura
     inodo_t inodo = {};
@@ -103,6 +105,8 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     unsigned char *dst = (unsigned char *)buf_original;
     unsigned char buff[BLOCKSIZE] = {}; // buffer de un bloque
 
+    // TODO: as an improvement, do not wait at the very beginning and signal at the very end of the function.
+    //       this can be optimized to a lower level of granularity
     mi_waitSem();
     inodo_t inodo = {};
     if (leer_inodo(ninodo, &inodo) == -1) {

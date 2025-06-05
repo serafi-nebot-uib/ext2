@@ -269,7 +269,6 @@ int mi_dir(const char *camino, char *buffer, char flag) {
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
-    // TODO: does mi_dir() have to update inode.atime?
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
     if (ret < 0) return ret;

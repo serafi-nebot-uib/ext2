@@ -6,8 +6,6 @@
 #ifndef __FICHEROS_BASICO_H__
 #define __FICHEROS_BASICO_H__
 
-// TODO: load virtual device with mmap
-
 #include <limits.h>
 #include <time.h>
 
@@ -44,7 +42,7 @@ typedef union {
 } superbloque_t;
 
 #define INODOSIZE           128 // tamaño en bytes de un inodo
-#define INODOS_IN_BLOCK     (BLOCKSIZE/INODOSIZE) // numero de inodos en un bloque
+#define INODOS_IN_BLOCK     (BLOCKSIZE / INODOSIZE) // numero de inodos en un bloque
 
 #define INODE_P_READ     0b100
 #define INODE_P_WRITE    0b010

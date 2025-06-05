@@ -1,3 +1,8 @@
+/**************************************************************************
+* FILENAME: simulacion.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
+
 #include "core/directorios.h"
 #include "simulacion.h"
 
@@ -113,7 +118,7 @@ int main(int argc, char **argv) {
             // iteramos para todas las escrituras a realizar
             for (size_t j = 0; j < NUMESCRITURAS; j++) {
                 registro_t registro;
-                registro.fecha = time(NULL);
+                gettimeofday(&registro.fecha, NULL);
                 registro.pid = pid;
                 registro.nEscritura = j;
                 registro.nRegistro = rand() % REGMAX;
@@ -121,7 +126,7 @@ int main(int argc, char **argv) {
                 printf("%sescritura %zu en %s\n" RESET, color, j, path);
 #endif
                 // escribimos el registro al final del fichero de datos del subproceso
-                if (mi_write(path, &registro, j * sizeof(registro), sizeof(registro)) == FALLO) {
+                if (mi_write(path, &registro, registro.nRegistro * sizeof(registro), sizeof(registro)) == FALLO) {
                     ERROR("no se ha podido escribir el registro en el fichero: %s", path);
                     clean_exit(FALLO);
                 }

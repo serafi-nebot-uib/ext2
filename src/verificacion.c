@@ -1,3 +1,8 @@
+/**************************************************************************
+* FILENAME: verificacion.c
+* AUTHOR: Serafí Nebot, Ignasi Paredes, Jaume Galmés
+**************************************************************************/
+
 #include "verificacion.h"
 #include "core/directorios.h"
 #include "core/ficheros.h"
@@ -43,26 +48,34 @@ void format_info(informacion_t *info, char *const buff, size_t size) {
 
     snprintf(tmp, sizeof(tmp), "Primera Escritura\t%d\t%d\t", info->PrimeraEscritura.nEscritura + 1, info->PrimeraEscritura.nRegistro);
     strcat(buff, tmp);
-    struct tm *t = localtime(&info->PrimeraEscritura.fecha);
-    strftime(tmp, sizeof(tmp), TIMESTAMP_FMT "\n", t);
+    struct tm *t = localtime(&info->PrimeraEscritura.fecha.tv_sec);
+    strftime(tmp, sizeof(tmp), TIMESTAMP_FMT, t);
+    strcat(buff, tmp);
+    snprintf(tmp, sizeof(tmp), ".%06d\n", info->PrimeraEscritura.fecha.tv_usec);
     strcat(buff, tmp);
 
     snprintf(tmp, sizeof(tmp), "Ultima Escritura\t%d\t%d\t", info->UltimaEscritura.nEscritura + 1, info->UltimaEscritura.nRegistro);
     strcat(buff, tmp);
-    t = localtime(&info->UltimaEscritura.fecha);
-    strftime(tmp, sizeof(tmp), TIMESTAMP_FMT "\n", t);
+    t = localtime(&info->UltimaEscritura.fecha.tv_sec);
+    strftime(tmp, sizeof(tmp), TIMESTAMP_FMT, t);
+    strcat(buff, tmp);
+    snprintf(tmp, sizeof(tmp), ".%06d\n", info->UltimaEscritura.fecha.tv_usec);
     strcat(buff, tmp);
 
     snprintf(tmp, sizeof(tmp), "Menor Posición\t\t%d\t%d\t", info->MenorPosicion.nEscritura + 1, info->MenorPosicion.nRegistro);
     strcat(buff, tmp);
-    t = localtime(&info->MenorPosicion.fecha);
-    strftime(tmp, sizeof(tmp), TIMESTAMP_FMT "\n", t);
+    t = localtime(&info->MenorPosicion.fecha.tv_sec);
+    strftime(tmp, sizeof(tmp), TIMESTAMP_FMT, t);
+    strcat(buff, tmp);
+    snprintf(tmp, sizeof(tmp), ".%06d\n", info->MenorPosicion.fecha.tv_usec);
     strcat(buff, tmp);
 
     snprintf(tmp, sizeof(tmp), "Mayor Posición\t\t%d\t%d\t", info->MayorPosicion.nEscritura + 1, info->MayorPosicion.nRegistro);
     strcat(buff, tmp);
-    t = localtime(&info->MayorPosicion.fecha);
-    strftime(tmp, sizeof(tmp), TIMESTAMP_FMT "\n", t);
+    t = localtime(&info->MayorPosicion.fecha.tv_sec);
+    strftime(tmp, sizeof(tmp), TIMESTAMP_FMT, t);
+    strcat(buff, tmp);
+    snprintf(tmp, sizeof(tmp), ".%06d\n", info->MayorPosicion.fecha.tv_usec);
     strcat(buff, tmp);
 }
 
@@ -143,11 +156,11 @@ int main(int argc, char **argv) {
 
         // array de registros donde sa van a ir leyendo todos los registros
         registro_t registros[REG_BUFFER_SIZE];
-        while (1) {
+        for (size_t reg = 0;; reg += REG_BUFFER_SIZE) {
             // elimniar basura del array de registros
             memset(registros, 0, sizeof(registros));
             // leer del archivo de datos todos los registros hasta rellenar el array de registros
-            int s = mi_read(data_path, registros, info.nEscrituras * sizeof(registro_t), sizeof(registros));
+            int s = mi_read(data_path, registros, reg * sizeof(registro_t), sizeof(registros));
             // si no hemos leído ningún registro -> no quedan más -> salimos del bucle
             if (s <= 0) break;
 
@@ -170,11 +183,12 @@ int main(int argc, char **argv) {
                         if (registros[j].nRegistro > info.MayorPosicion.nRegistro) memcpy(&info.MayorPosicion, &registros[j], sizeof(registro_t));
                     }
                     info.nEscrituras++; // incrementamos contados de escrituras validadas
+                    // printf("info.nEscrituras: %u\n", info.nEscrituras);
                 }
             }
         }
 
-        printf("%zu) %u escrituras validadas en %s\n", i + 1, info.nEscrituras, data_path);
+        printf("%4zu) %4u escrituras validadas en %s\n", i + 1, info.nEscrituras, data_path);
 
         // info_buff contiene el texto formateado de info
         char info_buff[512];
