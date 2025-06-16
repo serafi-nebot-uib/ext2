@@ -48,6 +48,7 @@ typedef union {
 #define INODE_P_WRITE    0b010
 #define INODE_P_EXECUTE  0b001
 
+// comprobar que perm tenga los permisos especificados en mask
 #define INODE_P(perm, mask) (((perm) & (mask)) == (mask))
 
 typedef union {

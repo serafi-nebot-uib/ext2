@@ -60,12 +60,13 @@ int extraer_camino_final(const char *camino, char *const final) {
     char *last = NULL;
     char *token = strtok(tmp, DELIM); // devuelve el token que precede al delimitador
 
+    // cojer el siguiente token hasta llegar al final
     while (token != NULL) {
         last = token;
         token = strtok(NULL, DELIM);
     }
 
-    if (last == NULL) return FALLO;
+    if (last == NULL) return FALLO; // no se ha encontrado ningún componente de la ruta
 
     strcpy(final, last);
 
@@ -193,6 +194,8 @@ void mostrar_error_buscar_entrada(int error) {
  * @return valor entero que representa el tipo de salida de la función, error o éxito
  */
 int mi_creat(const char *camino, unsigned char permisos) {
+    // se utiliza buscar_entrada con reservar=1 para crear la entrada especificada
+    // leemos el superbloque para pasarle el inodo raíz a buscar_entrada
     mi_waitSem();
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) {
@@ -202,7 +205,7 @@ int mi_creat(const char *camino, unsigned char permisos) {
 
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 1, permisos);
-    mi_signalSem();
+    mi_signalSem(); // salimos de la sección crítica porque ya no vamos a escribir más
     if (ret != EXITO) return ret;
 
     DEBUG(2, "camino: %s; permisos: %hhu", camino, permisos);
@@ -210,11 +213,13 @@ int mi_creat(const char *camino, unsigned char permisos) {
     DEBUG(2, "p_inodo: %u", p_inodo);
     DEBUG(2, "p_entrada: %u", p_entrada);
 
+    // TODO: check if this commented code is really needed
+    // comprobamos que se haya creado la entrada correctamente (realmente necesario?)
     inodo_t inodo_dir, inodo;
     if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO || leer_inodo(p_inodo, &inodo) == FALLO) return FALLO;
-    if (!INODE_P(inodo_dir.permisos, INODE_P_WRITE)) return ERROR_PERMISO_ESCRITURA;
-    if (!INODE_P(inodo_dir.permisos, INODE_P_READ)) return ERROR_PERMISO_LECTURA; // necessary?
-    if (inodo_dir.tipo != 'd') return ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO;
+    // if (!INODE_P(inodo_dir.permisos, INODE_P_WRITE)) return ERROR_PERMISO_ESCRITURA;
+    // if (!INODE_P(inodo_dir.permisos, INODE_P_READ)) return ERROR_PERMISO_LECTURA; // necessary?
+    // if (inodo_dir.tipo != 'd') return ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO;
 
     return EXITO;
 }
@@ -266,6 +271,7 @@ void mi_dir_entrada(const char *const nombre, inodo_t *inode, char *buffer, char
  *         FALLO/código de error en caso contrario.
  */
 int mi_dir(const char *camino, char *buffer, char flag) {
+    // leemos el superbloque para pasarle el inodo raíz a buscar_entrada
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
@@ -333,9 +339,11 @@ int mi_dir(const char *camino, char *buffer, char flag) {
  * @return EXITO en caso correcto, FALLO/código de error en caso contrario.
  */
 int mi_chmod(const char *camino, unsigned char permisos) {
+    // leemos el superbloque para pasarle el inodo raíz a buscar_entrada
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
+    // obtenemos el inodo correspondiente a la entrada especificada
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
     if (ret > 0) {
@@ -347,6 +355,7 @@ int mi_chmod(const char *camino, unsigned char permisos) {
     DEBUG(2, "p_inodo: %u", p_inodo);
     DEBUG(2, "p_entrada: %u", p_entrada);
 
+    // pasamos el numero de inodo de la entrada correspondiente a mi_chmod_f
     return mi_chmod_f(p_inodo, permisos);
 }
 
@@ -356,13 +365,14 @@ int mi_chmod(const char *camino, unsigned char permisos) {
  *
  * @param camino ruta del directorio o fichero
  * @param p_stat estructura de datos a la cual volcar la metainformación
- * @return posición del inodo en caso correcto,
- *         FALLO/código de error en caso contrario.
+ * @return posición del inodo en caso correcto, FALLO/código de error en caso contrario.
  */
 int mi_stat(const char *camino, stat_t *p_stat) {
+    // leemos el superbloque para pasarle el inodo raíz a buscar_entrada
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) return FALLO;
 
+    // obtenemos el inodo correspondiente a la entrada especificada
     unsigned int p_inodo_dir = sb.posInodoRaiz, p_inodo = 0, p_entrada = 0;
     int ret = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 0);
     if (ret > 0) {
@@ -374,6 +384,7 @@ int mi_stat(const char *camino, stat_t *p_stat) {
     DEBUG(2, "p_inodo: %u", p_inodo);
     DEBUG(2, "p_entrada: %u", p_entrada);
 
+    // pasamos el numero de inodo de la entrada correspondiente a mi_stat_f
     return mi_stat_f(p_inodo, p_stat) == EXITO ? p_inodo : FALLO;
 }
 
@@ -386,27 +397,30 @@ int mi_stat(const char *camino, stat_t *p_stat) {
  */
 int entrada_cache_get(const char *const camino, unsigned int *const p_inodo) {
 #if CACHE == 0
-    return -1;
+    return -1; // la cache no esta habilitada
 #else
     int ret = -1;
 
 #if CACHE == 1
+    // comprobar si la cache de una única componente coincide con camino
     if (strcmp(entrada_cache.camino, camino) == 0) {
-        *p_inodo = entrada_cache.p_inodo;
-        ret = 0;
+        *p_inodo = entrada_cache.p_inodo; // actualizar p_inodo con la entrada de la cache
+        ret = 0; // indicar que se ha encontrado la entrada especificada en la cache
     }
 #elif CACHE == 2 || CACHE == 3
-    unsigned int idx = 0;
+    // iterar sobre todas las entradas de la cache e ir comporobando una por una si coincide con camino
+    unsigned int idx = 0; // índice de la entrada en la cache que coincide con camino
     for (size_t i = 0; i < CACHE_SIZE && ret < 0; i++) {
         if (strcmp(entrada_cache[i].camino, camino) == 0) {
-            idx = i;
-            *p_inodo = entrada_cache[i].p_inodo;
-            ret = 0;
+            idx = i; // actualizar idx para apuntar a la entrada de la cache actual
+            *p_inodo = entrada_cache[i].p_inodo; // actualizar p_inodo con la entrada de la cache actual
+            ret = 0; // indicar que se ha encontrado la entrada especificada en la cache
         }
     }
     if (ret == 0) {
         DEBUG(1, CYAN "utilizamos cache[%u]: %s" RESET, idx, camino);
 #if CACHE == 3
+        // actualizar ultima_consulta de la entrada seleccionada para la selección de la víctima
         gettimeofday(&entrada_cache[idx].ultima_consulta, NULL);
 #endif
     }
@@ -426,26 +440,32 @@ void entrada_cache_put(const char *const camino, unsigned int p_inodo) {
 #if CACHE > 0
 
 #if CACHE == 1
+    // actualizar la entrada de la cache con los datos especificados
     strncpy(entrada_cache.camino, camino, sizeof(entrada_cache.camino));
     entrada_cache.p_inodo = p_inodo;
 #else
     unsigned int idx = entrada_cache_top;
 #if CACHE == 2
-    entrada_cache_top = (entrada_cache_top + 1) % CACHE_SIZE;
+    // en FIFO entrada_cache_top siempre apunta a la entrada a eliminar
+    entrada_cache_top = (entrada_cache_top + 1) % CACHE_SIZE; // se incrementa entrada_cache_top para la siguiente eliminación
 #endif
 #if CACHE == 3
+    // en LRU se iteran todas las entradas de la cache para encontrar la que se ha accedido hace más tiempo
     for (size_t i = 0; i < CACHE_SIZE; i++) {
+        // si ultima_consulta no esta inicializada significa que esa entrada no esta en uso
         if (!timerisset(&entrada_cache[i].ultima_consulta)) {
             DEBUG(3, "entrada_cache[%zu] timer is not set", i);
             idx = i;
             break;
         }
+        // comprobar si la entrada actual es menor (hace más tiempo) que la entrada seleccionada actualmente
         if (timercmp(&entrada_cache[i].ultima_consulta, &entrada_cache[idx].ultima_consulta, <)) {
             idx = i;
         }
     }
-    gettimeofday(&entrada_cache[idx].ultima_consulta, NULL);
+    gettimeofday(&entrada_cache[idx].ultima_consulta, NULL); // actualizar ultima_consulta de la entrada víctima
 #endif
+    // copiar los datos especificados a la entrada víctima
     entrada_cache_t *cache = &entrada_cache[idx];
     strncpy(cache->camino, camino, sizeof(cache->camino));
     cache->p_inodo = p_inodo;
@@ -467,7 +487,9 @@ void entrada_cache_put(const char *const camino, unsigned int p_inodo) {
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes) {
     unsigned int p_inodo_dir = 0, p_inodo = 0, p_entrada = 0;
 
+    // comprobar si existe la entrada especificada en la cache
     if (entrada_cache_get(camino, &p_inodo) < 0) {
+        // leemos el superbloque para pasarle el inodo raíz a buscar_entrada
         superbloque_t sb;
         if (bread(posSB, &sb) == FALLO) return FALLO;
 
@@ -481,7 +503,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
 #if CACHE == 1
         DEBUG(1, ORANGE "actualizamos la cache de escritura" RESET);
 #endif
-        entrada_cache_put(camino, p_inodo);
+        entrada_cache_put(camino, p_inodo); // introducimos la entrada a la cache
     } else {
 #if CACHE == 1
         DEBUG(1, CYAN "utilizamos la caché de escritura en vez de llamar a buscar_entrada()" RESET);
@@ -492,14 +514,16 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     DEBUG(2, "p_inodo: %u", p_inodo);
     DEBUG(2, "p_entrada: %u", p_entrada);
 
+    // pasamos el numero de inodo de la entrada a mi_write_f
     return mi_write_f(p_inodo, buf, offset, nbytes);
 }
 
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes) {
     unsigned int p_inodo_dir = 0, p_inodo = 0, p_entrada = 0;
 
+    // comprobar si existe la entrada especificada en la cache
     if (entrada_cache_get(camino, &p_inodo) < 0) {
-        // DEBUG(1, "\"%s\" not found in entrada cache", camino);
+        // leemos el superbloque para pasarle el inodo raíz a buscar_entrada
         superbloque_t sb;
         if (bread(posSB, &sb) == FALLO) return FALLO;
 
@@ -513,7 +537,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
 #if CACHE == 1
         DEBUG(1, ORANGE "actualizamos la cache de lectura" RESET);
 #endif
-        entrada_cache_put(camino, p_inodo);
+        entrada_cache_put(camino, p_inodo); // introducimos la entrada a la cache
     } else {
 #if CACHE == 1
         DEBUG(1, CYAN "utilizamos la caché de lectura en vez de llamar a buscar_entrada()" RESET);
@@ -524,6 +548,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     DEBUG(2, "p_inodo: %u", p_inodo);
     DEBUG(2, "p_entrada: %u", p_entrada);
 
+    // pasamos el numero de inodo de la entrada a mi_read_f
     return mi_read_f(p_inodo, buf, offset, nbytes);
 }
 
@@ -536,6 +561,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
  */
 int mi_link(const char *camino1, const char *camino2) {
     mi_waitSem();
+    // leemos el superbloque para pasarle el inodo raíz a buscar_entrada
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) {
         mi_signalSem();
@@ -554,20 +580,24 @@ int mi_link(const char *camino1, const char *camino2) {
     DEBUG(2, "p_inodo_1: %u", p_inodo_1);
     DEBUG(2, "p_entrada_1: %u", p_entrada_1);
 
+    // leemos el inodo de la ruta original
     inodo_t inodo_1;
     if (leer_inodo(p_inodo_1, &inodo_1) == FALLO) {
         mi_signalSem();
         return FALLO;
     }
+    // comprobar que la ruta original sea un fichero
     if (inodo_1.tipo != 'f') {
         mi_signalSem();
         return FALLO;
     }
+    // comprobar que la ruta original tiene permisos de lectura
     if (!INODE_P(inodo_1.permisos, INODE_P_READ)) {
         mi_signalSem();
         return ERROR_PERMISO_LECTURA;
     }
 
+    // creamos la entrada de la ruta enlace con buscar_entrada
     unsigned int p_inodo_dir_2 = sb.posInodoRaiz, p_inodo_2 = 0, p_entrada_2 = 0;
     ret = buscar_entrada(camino2, &p_inodo_dir_2, &p_inodo_2, &p_entrada_2, 1, 6);
     if (ret < 0) {
@@ -580,24 +610,27 @@ int mi_link(const char *camino1, const char *camino2) {
     DEBUG(2, "p_inodo_2: %u", p_inodo_2);
     DEBUG(2, "p_entrada_2: %u", p_entrada_2);
 
+    // leemos la entrada de la ruta enlace (que se acaba de crear con buscar_entrada)
     entrada_t entrada_2;
     if (mi_read_f(p_inodo_dir_2, &entrada_2, p_entrada_2 * sizeof(entrada_2), sizeof(entrada_2)) == FALLO) {
         mi_signalSem();
         return FALLO;
     }
+    // actualizamos el inodo al que apunta la nueva entrada al inodo original
     entrada_2.ninodo = p_inodo_1;
     if (mi_write_f(p_inodo_dir_2, &entrada_2, p_entrada_2 * sizeof(entrada_2), sizeof(entrada_2)) == FALLO) {
         mi_signalSem();
         return FALLO;
     }
+    // liberamos el inodo de la ruta enlace (que se acaba de crear con buscar_entrada)
     if (liberar_inodo(p_inodo_2) == FALLO) {
         mi_signalSem();
         return FALLO;
     }
 
-    inodo_1.nlinks++;
-    inodo_1.ctime = time(NULL);
-    ret = escribir_inodo(p_inodo_1, &inodo_1);
+    inodo_1.nlinks++; // incrementar nlinks para el inodo original
+    inodo_1.ctime = time(NULL); // actualizar el ctime (modificación del inodo)
+    ret = escribir_inodo(p_inodo_1, &inodo_1); // escribir el inodo original actualizado
     mi_signalSem();
     return ret == FALLO ? FALLO : EXITO;
 }
@@ -610,6 +643,7 @@ int mi_link(const char *camino1, const char *camino2) {
  */
 int mi_unlink(const char *camino) {
     mi_waitSem();
+    // leemos el superbloque para pasarle el inodo raíz a buscar_entrada
     superbloque_t sb;
     if (bread(posSB, &sb) == FALLO) {
         mi_signalSem();
@@ -633,15 +667,18 @@ int mi_unlink(const char *camino) {
         mi_signalSem();
         return FALLO;
     }
+    // si es un directorio y no esta vacío no se puede eliminar
     if (inodo.tipo == 'd' && inodo.tamEnBytesLog > 0) {
         ERROR("el directorio %s no está vacío", camino);
         mi_signalSem();
         return FALLO; // Si se trata de un directorio y no está vacío entonces no se puede borrar
     }
+    // comprobar que el inodo tiene permisos de escritura
     if (!INODE_P(inodo.permisos, INODE_P_WRITE)) {
         mi_signalSem();
         return ERROR_PERMISO_ESCRITURA;
     }
+    // leer el inodo padre para obtener el numero de entradas "hermanas"
     if (leer_inodo(p_inodo_dir, &inodo_dir) == FALLO) {
         mi_signalSem();
         return FALLO;
@@ -649,29 +686,35 @@ int mi_unlink(const char *camino) {
     int num_entradas = inodo_dir.tamEnBytesLog / sizeof(entrada_t);
     int ult_entrada = num_entradas - 1;
 
+    // sobreescribir la entrada a eliminar con la última entrada
     if (p_entrada != ult_entrada) {
+        // leer la última entrada
         entrada_t entrada_aux;
         if (mi_read_f(p_inodo_dir, &entrada_aux, ult_entrada * sizeof(entrada_t), sizeof(entrada_t)) == FALLO) {
             mi_signalSem();
             return FALLO;
         }
+        // sobreescribir la entrada a eliminar con la última entrada
         if (mi_write_f(p_inodo_dir, &entrada_aux, p_entrada * sizeof(entrada_t), sizeof(entrada_t)) == FALLO) {
             mi_signalSem();
             return FALLO;
         }
     }
+    // truncar el archivo para eliminar la última entrada
     if (mi_truncar_f(p_inodo_dir, inodo_dir.tamEnBytesLog - sizeof(entrada_t)) == FALLO) {
         mi_signalSem();
         return FALLO;
     }
 
-    inodo.nlinks--;
+    inodo.nlinks--; // decrementar nlinks del inodo
     if (inodo.nlinks == 0) {
+        // si ya no quedan más links se debe liberar el inodo
         if (liberar_inodo(p_inodo) == FALLO) {
             mi_signalSem();
             return FALLO;
         }
     } else {
+        // actualizar el ctime (modificación del inodo)
         inodo.ctime = time(NULL);
         if (escribir_inodo(p_inodo, &inodo) == FALLO) {
             mi_signalSem();

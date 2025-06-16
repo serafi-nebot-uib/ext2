@@ -35,15 +35,16 @@ typedef struct  {
 
 #if CACHE > 0
 typedef struct entrada_cache {
-    char camino[TAMNOMBRE * PROFUNDIDAD];
-    unsigned int p_inodo;
-    struct entrada_cache *next;
+    char camino[TAMNOMBRE * PROFUNDIDAD]; // ruta de la entrada
+    unsigned int p_inodo; // inodo de la entrada
 #if CACHE == 3
+    // ultima_consulta solo se necesita para LRU
     struct timeval ultima_consulta;
 #endif
 } entrada_cache_t;
 
 #if CACHE == 1
+// sólo se crea una entrada cache
 static entrada_cache_t entrada_cache = {};
 #elif CACHE > 1
     #ifndef CACHE_SIZE
@@ -53,8 +54,8 @@ static entrada_cache_t entrada_cache = {};
             #error "CACHE_SIZE debe ser > 0"
         #endif
     #endif
-static unsigned int entrada_cache_top = 0;
-static entrada_cache_t entrada_cache[CACHE_SIZE] = {};
+static unsigned int entrada_cache_top = 0; // índice del primer elemento de la cache (diferente para FIFO y LRU)
+static entrada_cache_t entrada_cache[CACHE_SIZE] = {}; // array de entradas cache con CACHE_SIZE
 #endif
 #endif
 

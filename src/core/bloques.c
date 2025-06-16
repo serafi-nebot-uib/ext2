@@ -8,7 +8,7 @@
 #include <sys/mman.h>
 
 // descriptor del fichero actual
-static sem_t *mutex;
+static sem_t *mutex = NULL;
 static int fd;
 static volatile size_t size = 0;
 static void *volatile addr = NULL;
@@ -16,13 +16,20 @@ static void *volatile addr = NULL;
 // modo de creación de ficheros: (-rw-rw-rw-)
 #define FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
+// cantidad de hilos que estan dentro de la sección crítica
 static unsigned int inside_sc = 0;
 
+/**
+ * Wait del semáforo de la sección crítica global
+ */
 void mi_waitSem() {
     if (!inside_sc) waitSem(mutex);
     inside_sc++;
 }
 
+/**
+ * Signal del semáforo de la sección crítica global
+ */
 void mi_signalSem() {
     inside_sc--;
     if (!inside_sc) signalSem(mutex);
@@ -58,6 +65,7 @@ int bmount(const char *camino) {
         return FALLO;
     }
 
+    // obtener la información del fichero para saber su tamaño
     struct stat st;
     if (fstat(fd, &st) < 0) {
         ERRSYS("fstat");
@@ -66,6 +74,8 @@ int bmount(const char *camino) {
         return FALLO;
     }
 
+    // se pone BLOCKSIZE como tamaño mínimo del fichero, pero realmente no es necesario
+    // se supone que no tiene sentido crear un SF sin superbloque
     size = st.st_size;
     if (size < BLOCKSIZE) {
         size = BLOCKSIZE;
@@ -78,6 +88,7 @@ int bmount(const char *camino) {
         }
     }
 
+    // mapear el fichero a memoria, se utiliza MAP_SHARED para que se comparta entre hilos de ejecución
     if ((addr = mmap(0, size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0)) == MAP_FAILED) {
         ERRSYS("mmap");
         umask(mask);
@@ -96,9 +107,10 @@ int bmount(const char *camino) {
  * @return EXITO si se ha desmontado correctamente el dispositivo virtual, FALLO en caso contrario
  */
 int bumount() {
-    deleteSem();
+    deleteSem(); // ya no se necesita el semáforo porque estamos desmontando el recurso compartido
     int ret = EXITO;
 
+    // deshacer el mapeo del fichero a memoria
     if (munmap(addr, size) < 0) {
         ERRSYS("munmap");
         ret = FALLO;
@@ -121,20 +133,23 @@ int bumount() {
  * sistema de ficheros y se sabe el numero de bloques total (sz = num_bloques_total * BLOCKSIZE)
  *
  * @param sz nueva medida del fichero en bytes
- * @return EXITO si se ha re-escalado 
+ * @return EXITO si se ha re-escalado
  */
 int resize(size_t sz) {
+    // deshacer temporalmente el mapeo del fichero a memoria
     if (munmap(addr, size) < 0) {
         ERRSYS("munmap");
         return FALLO;
     }
 
+    // modificar la medida del fichero al valor especificado
     size = sz;
     if (ftruncate(fd, size) < 0) {
         ERRSYS("ftruncate");
         return FALLO;
     }
 
+    // volver a realizar el mapeo del fichero a memoria
     if ((addr = mmap(0, size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0)) == MAP_FAILED) {
         ERRSYS("mmap");
         return FALLO;

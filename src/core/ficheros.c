@@ -25,6 +25,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         mi_signalSem();
         return FALLO;
     }
+    // comprobar que el inodo tenga permisos de escritura
     if (!INODE_P(inodo.permisos, INODE_P_WRITE)) {
         ERROR("no hay permisos de escritura");
         mi_signalSem();
@@ -76,13 +77,15 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     }
 
     time_t t = time(NULL);
-    inodo.mtime = t;
+    inodo.mtime = t; // actualizar el mtime (modificación de datos)
 
+    // si es necesario, incrementar el tamaño del fichero
     if (inodo.tamEnBytesLog < start + size) {
         inodo.tamEnBytesLog = start + size;
-        inodo.ctime = t;
+        inodo.ctime = t; // actualizar el ctime (modificación del inodo)
     }
 
+    // escribir el inodo actualizado
     if (escribir_inodo(ninodo, &inodo) == FALLO) {
         mi_signalSem();
         return FALLO;
@@ -132,20 +135,27 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     // pretende leer más allá de EOF, leemos sólo los bytes que podemos desde el offset hasta EOF
     if ((offset + nbytes) >= inodo.tamEnBytesLog) nbytes = inodo.tamEnBytesLog - offset;
 
+    // bytes de inicio y final a leer
     const unsigned int start = offset, end = offset + nbytes;
+    // inicio y final de bloques lógicos
     const unsigned int bstart = start / BLOCKSIZE, bend = end / BLOCKSIZE;
+    // offset final del último bloque
     const unsigned int end_off = end % BLOCKSIZE;
 
-    int bn = 0;
-    unsigned int idx = 0, size = 0;
+    unsigned int idx = 0; // índice del próximo byte a leer
+    // iterar sobre bloques lógicos del principio
     for (unsigned int i = bstart; i <= bend; i++) {
-        unsigned int off = (offset + idx) % BLOCKSIZE;
-        if ((size = (i == bend ? end_off : BLOCKSIZE) - off) == 0) break;
-        if ((bn = traducir_bloque_inodo(ninodo, i, 0)) != FALLO) {
-            if (bread(bn, buff) == FALLO) return FALLO;
-            memcpy(&dst[idx], &buff[off], size);
+        unsigned int off = (offset + idx) % BLOCKSIZE; // offset del byte a leer dentro del bloque actual
+        unsigned int size = (i == bend ? end_off : BLOCKSIZE) - off; // tamaño a leer del bloque actual
+        if (size == 0) break; // ya no hay más datos a leer
+
+        int bn = traducir_bloque_inodo(ninodo, i, 0); // numero de bloque lógico a leer (se utiliza sólo dentro del bucle)
+        if (bn != FALLO) {
+            if (bread(bn, buff) == FALLO) return FALLO; // leer el bloque actual entero y cargarlo a un buffer temporal
+            memcpy(&dst[idx], &buff[off], size); // copiar el buffer temporal al buffer de datos de destino
         }
-        idx += size;
+
+        idx += size; // incrementar el índice actual con el tamaño de bytes leídos
     }
 
     return idx;
@@ -161,7 +171,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 int mi_stat_f(unsigned int ninodo, stat_t *p_stat) {
     inodo_t inodo = {};
     if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO;
-    memcpy(p_stat, &inodo, sizeof(*p_stat));
+    memcpy(p_stat, &inodo, sizeof(*p_stat)); // copiar los datos del inodo al struct stat
     return EXITO;
 }
 
@@ -181,9 +191,10 @@ int mi_chmod_f(unsigned int ninodo, unsigned char permisos) {
         return FALLO;
     }
 
-    inodo.permisos = permisos;
-    inodo.ctime = time(NULL);
+    inodo.permisos = permisos; // actualizar los permisos del inodo
+    inodo.ctime = time(NULL); // actualizar el ctime (modificación del inodo)
 
+    // escribimos el inodo modificado
     if (escribir_inodo(ninodo, &inodo) == FALLO) {
         mi_signalSem();
         return FALLO;
