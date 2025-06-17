@@ -25,15 +25,6 @@ void reaper() {
 }
 
 /**
- * Dormir sin despertarse al recibir una señal
- * @param msec cantidad de milisegundos a dormir
- */
-void sleep_uninterrupted(unsigned int msec) {
-    struct timespec req = { .tv_sec = msec / 1000, .tv_nsec = (msec % 1000) * 1000000 }, rem = { 0 };
-    while (nanosleep(&req, &rem) == -1 && errno == EINTR) req = rem;
-}
-
-/**
  * Limpiar los recursos y parar la ejecución del programa.
  *
  * @param code código de error con el cual parar el programa
@@ -131,8 +122,7 @@ int main(int argc, char **argv) {
                     clean_exit(FALLO);
                 }
                 // esperamos 0.05 segundos entre escrituras
-                // usleep(50000);
-                sleep_uninterrupted(50);
+                usleep(50000);
             }
 
             printf("proceso %4zu completadas %4d escrituras en %s\n", i + 1, NUMESCRITURAS, path);
@@ -140,8 +130,8 @@ int main(int argc, char **argv) {
             clean_exit(EXITO);
         }
         // esperamos 0.15 segundo entre lanzamiento de procesos
-        // usleep(150000);
-        sleep_uninterrupted(150);
+        usleep(150000);
+        // usleep(1500);
     }
 
     // esperamos a que terminen todos los procesos
